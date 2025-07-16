@@ -112,7 +112,7 @@ export const Footer: React.FC = () => {
               {t("feedback") + " (en)" || "Feedback (de)"}
             </Link>
             <a
-              href="https://github.com/technologiestiftung/wfs-explorer"
+              href="https://github.com/technologiestiftung/odis-wfsexplorer"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--primary-color)] hover:opacity-80 text-sm"
