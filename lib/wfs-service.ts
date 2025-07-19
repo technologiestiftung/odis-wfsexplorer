@@ -1308,6 +1308,13 @@ export async function fetchWfsData(
         result = await processResponse(response, useGmlFallback);
       }
 
+      if (result.data.features.length === 0) {
+        console.warn(
+          "Look like there are no features. Carry on trying with GML"
+        );
+        throw new Error("No Features");
+      }
+
       return {
         ...result,
         sourceProjection,
