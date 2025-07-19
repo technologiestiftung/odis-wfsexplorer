@@ -746,282 +746,173 @@ export function parseDescribeFeatureTypeXml(xmlText: string): SchemaInfo {
 }
 
 // Helper function to extract geometry from GML
-function extractGeometryFromGml(geometryNode: Element): any {
-  // This is a simplified implementation - a full implementation would need to handle all GML geometry types
+function extractGeometryFromGml(geomElement: Element): GeoJSON.Geometry | null {
+  const gmlNS = "http://www.opengis.net/gml";
+  const posLists = geomElement.getElementsByTagNameNS(gmlNS, "posList");
 
-  // Check for Point
-  const pointNode = geometryNode.querySelector("*|Point");
-  if (pointNode) {
-    const posNode = pointNode.querySelector(
-      "*|pos, *|coordinates, *|coordinate"
-    );
-    if (posNode && posNode.textContent) {
-      const coords = posNode.textContent.trim().split(/\s+/).map(Number);
-      if (coords.length >= 2) {
-        return {
-          type: "Point",
-          coordinates: coords,
-        };
-      }
+  if (posLists.length === 0) return null;
+
+  const rings: number[][][] = [];
+
+  for (const posList of Array.from(posLists)) {
+    const coords = posList.textContent?.trim().split(/\s+/).map(Number) || [];
+    const ring: number[][] = [];
+
+    for (let i = 0; i < coords.length; i += 2) {
+      ring.push([coords[i], coords[i + 1]]);
     }
+
+    // Ensure closed ring
+    if (
+      ring.length &&
+      (ring[0][0] !== ring.at(-1)?.[0] || ring[0][1] !== ring.at(-1)?.[1])
+    ) {
+      ring.push([...ring[0]]);
+    }
+
+    rings.push(ring);
   }
 
-  // Check for LineString
-  const lineNode = geometryNode.querySelector("*|LineString");
-  if (lineNode) {
-    const posListNode = lineNode.querySelector("*|posList, *|coordinates");
-    if (posListNode && posListNode.textContent) {
-      const allCoords = posListNode.textContent.trim().split(/\s+/).map(Number);
-      const coordinates = [];
-
-      // Group coordinates into pairs
-      for (let i = 0; i < allCoords.length; i += 2) {
-        if (i + 1 < allCoords.length) {
-          coordinates.push([allCoords[i], allCoords[i + 1]]);
-        }
-      }
-
-      return {
-        type: "LineString",
-        coordinates,
-      };
-    }
+  // Support MultiPolygon if multiple surfaceMembers are found
+  if (rings.length === 1) {
+    return {
+      type: "Polygon",
+      coordinates: rings,
+    };
   }
 
-  // Check for Polygon
-  const polygonNode = geometryNode.querySelector("*|Polygon");
-  if (polygonNode) {
-    const exteriorNode = polygonNode.querySelector(
-      "*|exterior, *|outerBoundaryIs"
-    );
-    if (exteriorNode) {
-      const ringNode = exteriorNode.querySelector("*|LinearRing");
-      if (ringNode) {
-        const posListNode = ringNode.querySelector("*|posList, *|coordinates");
-        if (posListNode && posListNode.textContent) {
-          const allCoords = posListNode.textContent
-            .trim()
-            .split(/\s+/)
-            .map(Number);
-          const coordinates = [];
-
-          // Group coordinates into pairs
-          for (let i = 0; i < allCoords.length; i += 2) {
-            if (i + 1 < allCoords.length) {
-              coordinates.push([allCoords[i], allCoords[i + 1]]);
-            }
-          }
-
-          const exteriorRing = coordinates;
-          const rings = [exteriorRing];
-
-          // Check for interior rings (holes)
-          const interiorNodes = polygonNode.querySelectorAll(
-            "*|interior, *|innerBoundaryIs"
-          );
-          interiorNodes.forEach((interiorNode) => {
-            const innerRingNode = interiorNode.querySelector("*|LinearRing");
-            if (innerRingNode) {
-              const innerPosListNode = innerRingNode.querySelector(
-                "*|posList, *|coordinates"
-              );
-              if (innerPosListNode && innerPosListNode.textContent) {
-                const innerAllCoords = innerPosListNode.textContent
-                  .trim()
-                  .split(/\s+/)
-                  .map(Number);
-                const innerCoordinates = [];
-
-                // Group coordinates into pairs
-                for (let i = 0; i < innerAllCoords.length; i += 2) {
-                  if (i + 1 < innerAllCoords.length) {
-                    innerCoordinates.push([
-                      innerAllCoords[i],
-                      innerAllCoords[i + 1],
-                    ]);
-                  }
-                }
-
-                rings.push(innerCoordinates);
-              }
-            }
-          });
-
-          return {
-            type: "Polygon",
-            coordinates: rings,
-          };
-        }
-      }
-    }
-  }
-
-  // If we couldn't extract a specific geometry, return null
-  return null;
+  return {
+    type: "MultiPolygon",
+    coordinates: [rings],
+  };
 }
 
 // Update the processResponse function to handle XML/GML responses
 async function processResponse(response: Response, isGml = false) {
   try {
-    // Check content type to determine how to parse
     const contentType = response.headers.get("content-type") || "";
     const isXml = contentType.includes("xml") || isGml;
-
     let data: any;
 
     if (isXml) {
-      // Handle XML response
       const text = await response.text();
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(text, "text/xml");
 
-      // Convert XML to GeoJSON-like structure
+      const gmlNS = "http://www.opengis.net/gml";
+      const wfsNS = "http://www.opengis.net/wfs/2.0";
+
       data = {
         type: "FeatureCollection",
         features: [],
       };
 
-      // Try different approaches to find features in GML
-      const featureNodes = xmlDoc.querySelectorAll(
-        "*|member *|Feature, *|featureMember *|Feature, *|Feature, *|featureMember, *|member"
-      );
+      const members = xmlDoc.getElementsByTagNameNS(wfsNS, "member");
 
-      if (featureNodes.length === 0) {
-        console.warn("No feature nodes found in GML response");
+      if (members.length === 0) {
+        console.warn("No wfs:member elements found. Trying fallback mode.");
       }
 
-      featureNodes.forEach((featureNode, index) => {
-        try {
-          const properties: Record<string, any> = {};
-          let geometry: any = null;
+      for (const member of Array.from(members)) {
+        const featureNode = Array.from(member.children)[0]; // Generic — any feature type
+        if (!featureNode) continue;
 
-          // Extract all child elements as properties
-          Array.from(featureNode.children).forEach((child) => {
-            const tagName = child.tagName.split(":").pop() || child.tagName;
+        const properties: Record<string, any> = {};
+        let geometry: GeoJSON.Geometry | null = null;
 
-            // Skip namespace declarations and standard GML elements
-            if (tagName.startsWith("xmlns:") || tagName === "boundedBy") {
-              return;
+        for (const child of Array.from(featureNode.children)) {
+          const tagName = child.localName.toLowerCase();
+
+          if (tagName.includes("geom")) {
+            geometry = extractGeometryFromGml(child);
+          } else {
+            const text = child.textContent?.trim();
+            if (!text) continue;
+
+            let typedValue: any = text;
+            if (/^-?\d+(\.\d+)?$/.test(text)) {
+              typedValue = parseFloat(text);
+            } else if (text.toLowerCase() === "true") {
+              typedValue = true;
+            } else if (text.toLowerCase() === "false") {
+              typedValue = false;
             }
 
-            // Check if this is a geometry element
-            if (
-              tagName === "geometry" ||
-              tagName === "geom" ||
-              tagName.endsWith(":geometry") ||
-              tagName.endsWith(":geom") ||
-              child.querySelector("*|Point") ||
-              child.querySelector("*|LineString") ||
-              child.querySelector("*|Polygon") ||
-              child.querySelector("*|MultiPoint") ||
-              child.querySelector("*|MultiLineString") ||
-              child.querySelector("*|MultiPolygon")
-            ) {
-              // Extract geometry - this is a simplified approach
-              // A full implementation would need to properly parse GML geometries
-              geometry = extractGeometryFromGml(child);
-            } else {
-              // Extract property value
-              const value = child.textContent?.trim() || "";
-
-              // Try to convert to appropriate type
-              let typedValue: any = value;
-
-              // Try to convert to number if it looks like one
-              if (/^-?\d+(\.\d+)?$/.test(value)) {
-                typedValue = Number.parseFloat(value);
-              }
-              // Try to convert to boolean if it's "true" or "false"
-              else if (value.toLowerCase() === "true") {
-                typedValue = true;
-              } else if (value.toLowerCase() === "false") {
-                typedValue = false;
-              }
-
-              properties[tagName] = typedValue;
-            }
-          });
-
-          // Create a feature object
-          data.features.push({
-            type: "Feature",
-            id:
-              featureNode.getAttribute("gml:id") ||
-              featureNode.getAttribute("id") ||
-              `feature-${index}`,
-            properties,
-            geometry,
-          });
-        } catch (featureError) {
-          console.error("Error processing feature:", featureError);
+            properties[tagName] = typedValue;
+          }
         }
-      });
 
-      // If no features were found, try a different approach
+        const id =
+          featureNode.getAttributeNS(gmlNS, "id") ||
+          featureNode.getAttribute("id") ||
+          `feature-${data.features.length}`;
+
+        data.features.push({
+          type: "Feature",
+          id,
+          geometry,
+          properties,
+        });
+      }
+
+      // ✅ Fallback: collect features manually if above failed
       if (data.features.length === 0) {
-        console.warn(
-          "No features extracted from GML. Trying alternative approach..."
-        );
+        console.warn("Fallback: no features parsed. Attempting element scan.");
 
-        // This is a simplified fallback - a real implementation would need more robust GML parsing
-        const allElements = xmlDoc.querySelectorAll("*");
-        const potentialFeatures = new Map<string, any>();
+        const allElements = xmlDoc.getElementsByTagName("*");
+        const seenIds = new Set<string>();
 
-        allElements.forEach((el) => {
-          const id = el.getAttribute("gml:id") || el.getAttribute("id");
-          if (id && !potentialFeatures.has(id)) {
-            const properties: Record<string, any> = {};
-            let hasProperties = false;
+        for (const el of Array.from(allElements)) {
+          const id =
+            el.getAttributeNS(gmlNS, "id") || el.getAttribute("id") || null;
+          if (!id || seenIds.has(id)) continue;
 
-            Array.from(el.children).forEach((child) => {
-              const tagName = child.tagName.split(":").pop() || child.tagName;
-              if (
-                tagName !== "boundedBy" &&
-                !tagName.includes("geometry") &&
-                !tagName.includes("geom")
-              ) {
-                properties[tagName] = child.textContent?.trim() || "";
-                hasProperties = true;
-              }
-            });
+          const children = Array.from(el.children);
+          const properties: Record<string, any> = {};
+          let hasProps = false;
 
-            if (hasProperties) {
-              potentialFeatures.set(id, {
-                type: "Feature",
-                id,
-                properties,
-                geometry: null,
-              });
+          for (const child of children) {
+            const tag = child.localName.toLowerCase();
+            const text = child.textContent?.trim();
+            if (!text || tag === "boundedby") continue;
+
+            if (!tag.includes("geom")) {
+              hasProps = true;
+              properties[tag] = text;
             }
           }
-        });
 
-        if (potentialFeatures.size > 0) {
-          data.features = Array.from(potentialFeatures.values());
+          if (hasProps) {
+            seenIds.add(id);
+            data.features.push({
+              type: "Feature",
+              id,
+              geometry: null,
+              properties,
+            });
+          }
         }
       }
     } else {
-      // Handle JSON response
+      // ✅ Handle JSON/GeoJSON fallback
       data = await response.json();
     }
 
-    // Validate the response has a GeoJSON-like structure
     if (!data.type || !Array.isArray(data.features)) {
       throw new Error("Invalid response format from WFS");
     }
 
-    // Extract all unique attributes from all features
+    // ✅ Extract unique attributes
     const attributesSet = new Set<string>();
     data.features.forEach((feature: any) => {
       if (feature.properties) {
-        Object.keys(feature.properties).forEach((key) => {
-          attributesSet.add(key);
-        });
+        Object.keys(feature.properties).forEach((key) =>
+          attributesSet.add(key)
+        );
       }
     });
 
     const attributes = Array.from(attributesSet).sort();
-
     return { data, attributes };
   } catch (error) {
     console.error("Error processing WFS response:", error);

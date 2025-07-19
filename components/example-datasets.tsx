@@ -34,7 +34,7 @@ export function ExampleDatasets({ onSelectDataset }: ExampleDatasetsProps) {
     },
     {
       nameKey: "berlinHikingTrails",
-      url: "https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/sp_gruene_wege_wander",
+      url: "https://gdi.berlin.de/services/wfs/gruene_wege?REQUEST=GetCapabilities&SERVICE=wfs",
       descriptionKey: "berlinHikingTrailsDesc",
       icon: <Route className="h-4 w-4" />,
     },
