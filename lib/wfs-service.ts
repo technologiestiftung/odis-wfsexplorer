@@ -1183,21 +1183,7 @@ export async function fetchWfsData(
       });
 
       let result;
-      console.log("isDowload?: boolean = false", isDowload);
-
-      if (isDowload) {
-        result = await processResponse(response, useGmlFallback);
-        const normalizedProj = normalizeProjectionCode(sourceProjection);
-        if (normalizedProj !== "EPSG:4326") {
-          console.log("reprojecting geom....");
-
-          result.data.features.forEach((f) =>
-            reprojectGeometry(f.geometry, normalizedProj, "EPSG:4326")
-          );
-        }
-      } else {
-        result = await processResponse(response, useGmlFallback);
-      }
+      result = await processResponse(response, useGmlFallback);
 
       if (result.data.features.length === 0) {
         console.warn(
@@ -1498,8 +1484,6 @@ export async function fetchWfsDataForDownload(
     const requestUrl = `${url.origin}${
       url.pathname
     }?${searchParams.toString()}`;
-
-    console.log("ÄÄÄÄÄÄÄSss", url.origin);
 
     console.log("Fetching WFS data from:", requestUrl);
 

@@ -17,6 +17,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { geojsonToCsv } from "@/lib/geojsonToCsv";
+import { normalizeProjectionCode, reprojectGeometry } from "@/lib/geo-utils";
 
 interface DownloadOptionsProps {
   wfsUrl: string;
@@ -72,9 +73,22 @@ export function DownloadOptions({
         true
       );
 
+      const sourceProjection = layer?.defaultProjection || "EPSG:4326";
+      const normalizedProj = normalizeProjectionCode(sourceProjection);
+      const dataParsed = JSON.parse(data);
+
+      if (normalizedProj !== "EPSG:4326") {
+        dataParsed.features.forEach((f) =>
+          reprojectGeometry(f.geometry, normalizedProj, "EPSG:4326")
+        );
+        data = dataParsed;
+      }
+
       if (exportFormat === "csv") {
-        const dataParsed = JSON.parse(data);
+        // const dataParsed = JSON.parse(data);
         data = geojsonToCsv(dataParsed);
+      } else {
+        data = JSON.stringify(data);
       }
 
       const isCsv = exportFormat === "csv";
