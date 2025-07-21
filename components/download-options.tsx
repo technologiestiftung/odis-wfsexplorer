@@ -40,8 +40,11 @@ export function DownloadOptions({
   const [isDownloadingGeoJSON, setIsDownloadingGeoJSON] = useState(false);
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
 
-  const [downloadType, setDownloadType] = useState<"wgs84" | "native">("wgs84");
   const [downloadAll, setDownloadAll] = useState(true);
+  const [nativeProjection, setNativeProjection] = useState(false);
+
+  const sourceProjection = layer?.defaultProjection || "EPSG:4326";
+  const normalizedProj = normalizeProjectionCode(sourceProjection);
 
   // Determine if we should show the "download all" checkbox
   const showDownloadAllOption =
@@ -58,7 +61,7 @@ export function DownloadOptions({
       }
 
       // If there's a projection issue or user selected native, fetch in native projection
-      const useNativeProjection = projectionIssue || downloadType === "native";
+      const useNativeProjection = projectionIssue;
 
       // Use 0 as maxFeatures when downloadAll is true to get all features
       const effectiveMaxFeatures = downloadAll ? 0 : maxFeatures;
@@ -73,15 +76,20 @@ export function DownloadOptions({
         true
       );
 
-      const sourceProjection = layer?.defaultProjection || "EPSG:4326";
-      const normalizedProj = normalizeProjectionCode(sourceProjection);
       const dataParsed = JSON.parse(data);
 
-      if (normalizedProj !== "EPSG:4326") {
-        dataParsed.features.forEach((f) =>
-          reprojectGeometry(f.geometry, normalizedProj, "EPSG:4326")
-        );
-        data = dataParsed;
+      // no need to reproject for csv - it has no geom
+      if (exportFormat !== "csv") {
+        if (!nativeProjection) {
+          if (normalizedProj !== "EPSG:4326") {
+            dataParsed.features.forEach((f) =>
+              reprojectGeometry(f.geometry, normalizedProj, "EPSG:4326")
+            );
+            data = dataParsed;
+          }
+        } else {
+          data = dataParsed;
+        }
       }
 
       if (exportFormat === "csv") {
@@ -135,68 +143,6 @@ export function DownloadOptions({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* <div className="space-y-2">
-            <p className="text-sm mb-2">{t("projectionFormat")}</p>
-            {!projectionIssue ? (
-              <Tabs
-                defaultValue="wgs84"
-                value={downloadType}
-                onValueChange={(v) => setDownloadType(v as any)}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger
-                    value="wgs84"
-                    className="flex items-center gap-1"
-                  >
-                    <span className="font-medium">WGS84</span>
-                    <span className="text-xs text-muted-foreground">
-                      (EPSG:4326)
-                    </span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="native"
-                    className="flex items-center gap-1"
-                  >
-                    <span className="font-medium">{t("nativeProjection")}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({layer.defaultProjection || t("unknown")})
-                    </span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : (
-              <div className="text-sm bg-muted p-2 rounded">
-                {t("nativeProjectionOnly")} (
-                {layer.defaultProjection || t("unknown")})
-              </div>
-            )}
-          </div> */}
-          {/* <div className="text-sm text-muted-foreground">
-            {t("downloadCompleteDataText")}
-          </div> */}
-
-          {/* <Button
-            onClick={handleDownload}
-            className="w-full bg-odis-light hover:bg-active hover:!text-odis-dark text-white"
-            disabled={isDownloadingGeoJSON}
-            size="lg"
-          >
-            {isDownloadingGeoJSON ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t("downloading")}
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                {t("downloadGeoJSON")}{" "}
-                {projectionIssue || downloadType === "native"
-                  ? `(${layer.defaultProjection || t("nativeProjection")})`
-                  : "(EPSG:4326)"}
-              </>
-            )}
-          </Button> */}
           <Button
             onClick={handleDownload}
             className="w-full bg-odis-light hover:bg-active hover:!text-odis-dark text-white"
@@ -235,6 +181,24 @@ export function DownloadOptions({
             )}
           </Button>
 
+          {normalizedProj !== "EPSG:4326" && (
+            <div className="flex items-start space-x-2  pt-3">
+              <Checkbox
+                id="native-check"
+                checked={nativeProjection}
+                onCheckedChange={(c) => setNativeProjection(c as boolean)}
+              />
+              <div className="grid gap-1.5 leading-none">
+                <Label
+                  htmlFor="native-check"
+                  className="text-sm font-medium leading-1 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {`${t("nativeProjection")} (${normalizedProj})`}
+                </Label>
+              </div>
+            </div>
+          )}
+
           {showDownloadAllOption && maxFeatures < totalFeatureCount && (
             <div className="flex items-start space-x-2  pt-3">
               <Checkbox
@@ -247,7 +211,7 @@ export function DownloadOptions({
               <div className="grid gap-1.5 leading-none">
                 <Label
                   htmlFor="download-all"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm font-medium leading-1 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   {t("downloadAllFeatures")}
                 </Label>

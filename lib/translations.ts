@@ -394,7 +394,7 @@ export const enTranslations: Record<TranslationKey, string> = {
   projectionErrorDesc:
     "Map preview is not available. Use the download option with native projection instead.",
   projectionWarning: "Projection Warning",
-  nativeProjection: "Native",
+  nativeProjection: "Native projection",
   nativeProjectionOnly:
     "Native projection only - WGS84 conversion not available",
   mapNotAvailable:
@@ -688,7 +688,7 @@ export const deTranslations: Record<TranslationKey, string> = {
   projectionErrorDesc:
     "Kartenvorschau ist nicht verfügbar. Verwende stattdessen die Download-Option mit nativer Projektion.",
   projectionWarning: "Projektionswarnung",
-  nativeProjection: "Native",
+  nativeProjection: "Native Projektion",
   nativeProjectionOnly:
     "Nur native Projektion - WGS84-Konvertierung nicht verfügbar",
   mapNotAvailable:
