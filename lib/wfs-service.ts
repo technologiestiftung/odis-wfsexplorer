@@ -1,5 +1,3 @@
-import { normalizeProjectionCode, reprojectGeometry } from "@/lib/geo-utils";
-
 // Default maximum number of features to fetch
 const DEFAULT_MAX_FEATURES = 500;
 

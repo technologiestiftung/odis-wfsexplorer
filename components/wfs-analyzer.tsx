@@ -59,6 +59,12 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 // } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import {
+  normalizeProjectionCode,
+  reprojectGeometry,
+  isLikelyWGS84,
+} from "@/lib/geo-utils";
+
 // Use dynamic import with no SSR for the MapPreview component
 const MapPreview = dynamic(() => import("@/components/map-preview"), {
   ssr: false,
@@ -448,8 +454,24 @@ export default function WfsAnalyzer() {
       const {
         data,
         attributes: fetchedAttributes,
-        sourceProjection: detectedProjection,
+        sourceProjection,
       } = await fetchWfsData(urlToUse, layer.id, maxFeaturesValue, layer);
+
+      let detectedProjection = sourceProjection;
+      if (data?.features && data?.features?.length) {
+        const isWGS84 = isLikelyWGS84(data?.features[0]);
+        if (isWGS84) {
+          detectedProjection = "EPSG:4326";
+        }
+      }
+      // reroject
+      const normalizedProj = normalizeProjectionCode(detectedProjection);
+      if (normalizedProj !== "EPSG:4326") {
+        if (data?.features && data?.features?.length)
+          data.features.forEach((f) =>
+            reprojectGeometry(f.geometry, normalizedProj, "EPSG:4326")
+          );
+      }
 
       setWfsData(data);
       setFilteredData(data); // Initialize filtered data with all data
@@ -1463,6 +1485,7 @@ export default function WfsAnalyzer() {
                           loadedFeatureCount={
                             filteredData?.features?.length || 0
                           }
+                          sourceProjection={sourceProjection}
                         />
                       )}
 

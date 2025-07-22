@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/language-context";
 import { X, SquarePlus, SquareMinus } from "lucide-react";
-import { normalizeProjectionCode, reprojectGeometry } from "@/lib/geo-utils";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -94,12 +93,12 @@ export default function MapPreview({
       features: JSON.parse(JSON.stringify(validFeatures)),
     };
 
-    const normalizedProj = normalizeProjectionCode(sourceProjection);
-    if (normalizedProj !== "EPSG:4326") {
-      processedGeoJson.features.forEach((f) =>
-        reprojectGeometry(f.geometry, normalizedProj, "EPSG:4326")
-      );
-    }
+    // const normalizedProj = normalizeProjectionCode(sourceProjection);
+    // if (normalizedProj !== "EPSG:4326") {
+    //   processedGeoJson.features.forEach((f) =>
+    //     reprojectGeometry(f.geometry, normalizedProj, "EPSG:4326")
+    //   );
+    // }
 
     const layer = L.geoJSON(processedGeoJson, {
       style: { color: "#4c68c7", weight: 2 },

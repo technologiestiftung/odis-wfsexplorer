@@ -26,6 +26,7 @@ interface DownloadOptionsProps {
   projectionIssue?: boolean;
   totalFeatureCount?: number | null;
   loadedFeatureCount?: number;
+  sourceProjection: string;
 }
 
 export function DownloadOptions({
@@ -35,6 +36,7 @@ export function DownloadOptions({
   projectionIssue = false,
   totalFeatureCount = null,
   loadedFeatureCount = 0,
+  sourceProjection = "EPSG:4326",
 }: DownloadOptionsProps) {
   const { t } = useLanguage();
   const [isDownloadingGeoJSON, setIsDownloadingGeoJSON] = useState(false);
@@ -43,8 +45,8 @@ export function DownloadOptions({
   const [downloadAll, setDownloadAll] = useState(true);
   const [nativeProjection, setNativeProjection] = useState(false);
 
-  const sourceProjection = layer?.defaultProjection || "EPSG:4326";
-  const normalizedProj = normalizeProjectionCode(sourceProjection);
+  // const sourceProjection = layer?.defaultProjection || "EPSG:4326";
+  // const normalizedProj = normalizeProjectionCode(sourceProjection);
 
   // Determine if we should show the "download all" checkbox
   const showDownloadAllOption =
@@ -81,12 +83,12 @@ export function DownloadOptions({
       // no need to reproject for csv - it has no geom
       if (exportFormat !== "csv") {
         if (!nativeProjection) {
-          if (normalizedProj !== "EPSG:4326") {
+          if (sourceProjection !== "EPSG:4326") {
             dataParsed.features.forEach((f) =>
-              reprojectGeometry(f.geometry, normalizedProj, "EPSG:4326")
+              reprojectGeometry(f.geometry, sourceProjection, "EPSG:4326")
             );
-            data = dataParsed;
           }
+          data = dataParsed;
         } else {
           data = dataParsed;
         }
@@ -181,7 +183,7 @@ export function DownloadOptions({
             )}
           </Button>
 
-          {normalizedProj !== "EPSG:4326" && (
+          {sourceProjection !== "EPSG:4326" && (
             <div className="flex items-start space-x-2  pt-3">
               <Checkbox
                 id="native-check"
@@ -193,7 +195,7 @@ export function DownloadOptions({
                   htmlFor="native-check"
                   className="text-sm font-medium leading-1 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  {`${t("nativeProjection")} (${normalizedProj})`}
+                  {`${t("nativeProjection")} (${sourceProjection})`}
                 </Label>
               </div>
             </div>

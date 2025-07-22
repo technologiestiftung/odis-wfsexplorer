@@ -92,3 +92,42 @@ export function getCoordinateSample(geometry: any): number[] | null {
       return null;
   }
 }
+
+export function isLikelyWGS84(feature) {
+  if (!feature || feature.type !== "Feature" || !feature.geometry) {
+    return false;
+    // throw new Error("Invalid GeoJSON Feature");
+  }
+
+  function isValidLonLat(coord) {
+    if (!Array.isArray(coord) || coord.length < 2) return false;
+    const [lon, lat] = coord;
+    return (
+      typeof lon === "number" &&
+      typeof lat === "number" &&
+      lon >= -180 &&
+      lon <= 180 &&
+      lat >= -90 &&
+      lat <= 90
+    );
+  }
+
+  function checkCoordinates(coords) {
+    if (typeof coords[0] === "number") {
+      // Single coordinate
+      return isValidLonLat(coords);
+    } else if (Array.isArray(coords[0])) {
+      // Nested array: recurse
+      return coords.every(checkCoordinates);
+    }
+    return false;
+  }
+
+  const geometry = feature.geometry;
+
+  if (geometry.type === "GeometryCollection") {
+    return geometry.geometries.every((g) => checkCoordinates(g.coordinates));
+  }
+
+  return checkCoordinates(geometry.coordinates);
+}
