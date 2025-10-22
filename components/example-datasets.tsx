@@ -22,7 +22,7 @@ export function ExampleDatasets({ onSelectDataset }: ExampleDatasetsProps) {
   const exampleDatasets: ExampleDataset[] = [
     {
       nameKey: "berlinCemeteries",
-      url: "https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/sach_friedh",
+      url: "https://gdi.berlin.de/services/wms/friedhofsbestand",
       descriptionKey: "berlinCemeteriesDesc",
       icon: <Database className="h-4 w-4" />,
     },
