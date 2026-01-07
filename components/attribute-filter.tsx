@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +55,7 @@ const DATE_OPERATORS = [
 ];
 
 // Define filter condition interface
-interface FilterCondition {
+export interface FilterCondition {
   id: string;
   attribute: string;
   operator: string;
@@ -66,8 +66,9 @@ interface FilterCondition {
 interface AttributeFilterProps {
   data: any;
   attributes: string[];
-  onFilterChange: (filteredData: any) => void;
+  onFilterChange: (filteredData: any, filters: FilterCondition[]) => void;
   onActiveFiltersChange?: (filters: FilterCondition[]) => void; // Add this line
+  initialFilters?: FilterCondition[];
 }
 
 export function AttributeFilter({
@@ -75,6 +76,7 @@ export function AttributeFilter({
   attributes,
   onFilterChange,
   onActiveFiltersChange,
+  initialFilters = [],
 }: AttributeFilterProps) {
   const [filterConditions, setFilterConditions] = useState<FilterCondition[]>(
     []
@@ -82,42 +84,15 @@ export function AttributeFilter({
   const [activeFilters, setActiveFilters] = useState<FilterCondition[]>([]);
   const [filteredCount, setFilteredCount] = useState<number | null>(null);
   const [filteredRemoved, setFilteredRemoved] = useState<boolean>(false);
+  const [pendingUrlApply, setPendingUrlApply] = useState(false);
+  const hasAppliedInitialFilters = useRef(false);
+  const previousDataRef = useRef<any>(null);
 
   const [attributeValueSuggestions, setAttributeValueSuggestions] = useState<
     Record<string, string[]>
   >({});
 
   const { t } = useLanguage();
-
-  // Reset filters when data changes completely (new layer loaded)
-  useEffect(() => {
-    if (!data) {
-      setFilterConditions([]);
-      setActiveFilters([]);
-      setFilteredCount(null);
-      return;
-    }
-
-    // Only reset if it's a new dataset (check if features length changed significantly)
-    if (activeFilters.length > 0) {
-      // Re-apply existing filters to the new data
-      applyFilters();
-    } else {
-      // Pass the original data when no filters exist
-      onFilterChange(data);
-    }
-
-    // Generate suggestions for all attributes
-    if (data && data.features && data.features.length > 0) {
-      const suggestions: Record<string, string[]> = {};
-
-      attributes.forEach((attr) => {
-        suggestions[attr] = getSuggestionsForAttribute(attr);
-      });
-
-      setAttributeValueSuggestions(suggestions);
-    }
-  }, [data, attributes]);
 
   // Get attribute data types
   const attributeTypes = useMemo(() => {
@@ -133,131 +108,9 @@ export function AttributeFilter({
     return types;
   }, [data, attributes]);
 
-  // Add a new filter condition
-  const addFilterCondition = () => {
-    const newCondition: FilterCondition = {
-      id: `filter-${Date.now()}`,
-      attribute: attributes[0] || "",
-      operator: "equals",
-      value: "",
-    };
-    setFilterConditions([...filterConditions, newCondition]);
-  };
-
-  useEffect(() => {
-    console.log("filteredRemoved", filteredRemoved);
-
-    if (filteredRemoved) {
-      applyFilters();
-      setFilteredRemoved(false);
-    }
-  }, [filteredRemoved]);
-
-  // Remove a filter condition
-  const removeFilterCondition = (id: string) => {
-    setFilterConditions(
-      filterConditions.filter((condition) => condition.id !== id)
-    );
-
-    setFilteredRemoved(true);
-  };
-
-  // Update a filter condition
-  const updateFilterCondition = (
-    id: string,
-    field: keyof FilterCondition,
-    value: string
-  ) => {
-    setFilterConditions(
-      filterConditions.map((condition) => {
-        if (condition.id === id) {
-          // If changing the attribute, reset the operator to an appropriate default
-          if (field === "attribute") {
-            const dataType = attributeTypes[value] || "string";
-            const defaultOperator = "equals";
-
-            return {
-              ...condition,
-              [field]: value,
-              operator: defaultOperator,
-              value: "",
-              value2: undefined,
-            };
-          }
-
-          // If changing the operator to one that doesn't need a value
-          if (
-            field === "operator" &&
-            ["isEmpty", "isNotEmpty", "isNull", "isNotNull"].includes(value)
-          ) {
-            return {
-              ...condition,
-              [field]: value,
-              value: "",
-              value2: undefined,
-            };
-          }
-
-          // If changing to "between" operator, initialize value2
-          if (field === "operator" && value === "between") {
-            return {
-              ...condition,
-              [field]: value,
-              value2: "",
-            };
-          }
-
-          // Default case
-          return { ...condition, [field]: value };
-        }
-        return condition;
-      })
-    );
-  };
-
-  // Get suggestions for attribute values
-  const getSuggestionsForAttribute = (attribute: string): string[] => {
-    if (!data || !data.features || data.features.length === 0) return [];
-
-    const dataType = attributeTypes[attribute] || "string";
-    const uniqueValues = new Set<string>();
-    const maxSuggestions = 20;
-
-    // Collect unique values for the attribute
-    data.features.forEach((feature: any) => {
-      if (
-        feature.properties &&
-        feature.properties[attribute] !== undefined &&
-        feature.properties[attribute] !== null
-      ) {
-        uniqueValues.add(String(feature.properties[attribute]));
-      }
-    });
-
-    // Convert to array and limit to max suggestions
-    return Array.from(uniqueValues).slice(0, maxSuggestions);
-  };
-
-  // Get operators based on attribute data type
-  const getOperatorsForAttribute = (attribute: string) => {
-    const dataType = attributeTypes[attribute] || "string";
-
-    switch (dataType) {
-      case "number":
-        return NUMBER_OPERATORS;
-      case "boolean":
-        return BOOLEAN_OPERATORS;
-      case "date":
-        return DATE_OPERATORS;
-      default:
-        return STRING_OPERATORS;
-    }
-  };
-
-  // Apply filters to data
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     if (!data || !data.features || filterConditions.length === 0) {
-      onFilterChange(data);
+      onFilterChange(data, []);
       setActiveFilters([]);
       setFilteredCount(null);
       if (onActiveFiltersChange) onActiveFiltersChange([]);
@@ -391,15 +244,204 @@ export function AttributeFilter({
     }
 
     // Pass filtered data to parent component
-    onFilterChange(filteredData);
+    onFilterChange(filteredData, [...filterConditions]);
+  }, [
+    data,
+    filterConditions,
+    attributeTypes,
+    onFilterChange,
+    onActiveFiltersChange,
+  ]);
+
+  // Reset filters when data changes completely (new layer loaded)
+  useEffect(() => {
+    if (!data) {
+      setFilterConditions([]);
+      setActiveFilters([]);
+      setFilteredCount(null);
+      previousDataRef.current = null;
+      return;
+    }
+
+    const isNewDataset = previousDataRef.current !== data;
+    previousDataRef.current = data;
+
+    if (!isNewDataset) return;
+
+    // Re-apply existing filters to the new data
+    if (filterConditions.length > 0) {
+      applyFilters();
+    } else {
+      // Pass the original data when no filters exist
+      onFilterChange(data, []);
+    }
+
+    // Generate suggestions for all attributes
+    if (data && data.features && data.features.length > 0) {
+      const suggestions: Record<string, string[]> = {};
+
+      attributes.forEach((attr) => {
+        suggestions[attr] = getSuggestionsForAttribute(attr);
+      });
+
+      setAttributeValueSuggestions(suggestions);
+    }
+  }, [data, attributes, filterConditions.length, applyFilters, onFilterChange]);
+
+  // Add a new filter condition
+  const addFilterCondition = () => {
+    const newCondition: FilterCondition = {
+      id: `filter-${Date.now()}`,
+      attribute: attributes[0] || "",
+      operator: "equals",
+      value: "",
+    };
+    setFilterConditions([...filterConditions, newCondition]);
   };
+
+  useEffect(() => {
+    console.log("filteredRemoved", filteredRemoved);
+
+    if (filteredRemoved) {
+      applyFilters();
+      setFilteredRemoved(false);
+    }
+  }, [filteredRemoved, applyFilters]);
+
+  // Remove a filter condition
+  const removeFilterCondition = (id: string) => {
+    setFilterConditions(
+      filterConditions.filter((condition) => condition.id !== id)
+    );
+
+    setFilteredRemoved(true);
+  };
+
+  // Update a filter condition
+  const updateFilterCondition = (
+    id: string,
+    field: keyof FilterCondition,
+    value: string
+  ) => {
+    setFilterConditions(
+      filterConditions.map((condition) => {
+        if (condition.id === id) {
+          // If changing the attribute, reset the operator to an appropriate default
+          if (field === "attribute") {
+            const dataType = attributeTypes[value] || "string";
+            const defaultOperator = "equals";
+
+            return {
+              ...condition,
+              [field]: value,
+              operator: defaultOperator,
+              value: "",
+              value2: undefined,
+            };
+          }
+
+          // If changing the operator to one that doesn't need a value
+          if (
+            field === "operator" &&
+            ["isEmpty", "isNotEmpty", "isNull", "isNotNull"].includes(value)
+          ) {
+            return {
+              ...condition,
+              [field]: value,
+              value: "",
+              value2: undefined,
+            };
+          }
+
+          // If changing to "between" operator, initialize value2
+          if (field === "operator" && value === "between") {
+            return {
+              ...condition,
+              [field]: value,
+              value2: "",
+            };
+          }
+
+          // Default case
+          return { ...condition, [field]: value };
+        }
+        return condition;
+      })
+    );
+  };
+
+  // Get suggestions for attribute values
+  const getSuggestionsForAttribute = (attribute: string): string[] => {
+    if (!data || !data.features || data.features.length === 0) return [];
+
+    const dataType = attributeTypes[attribute] || "string";
+    const uniqueValues = new Set<string>();
+    const maxSuggestions = 20;
+
+    // Collect unique values for the attribute
+    data.features.forEach((feature: any) => {
+      if (
+        feature.properties &&
+        feature.properties[attribute] !== undefined &&
+        feature.properties[attribute] !== null
+      ) {
+        uniqueValues.add(String(feature.properties[attribute]));
+      }
+    });
+
+    // Convert to array and limit to max suggestions
+    return Array.from(uniqueValues).slice(0, maxSuggestions);
+  };
+
+  // Get operators based on attribute data type
+  const getOperatorsForAttribute = (attribute: string) => {
+    const dataType = attributeTypes[attribute] || "string";
+
+    switch (dataType) {
+      case "number":
+        return NUMBER_OPERATORS;
+      case "boolean":
+        return BOOLEAN_OPERATORS;
+      case "date":
+        return DATE_OPERATORS;
+      default:
+        return STRING_OPERATORS;
+    }
+  };
+
+  useEffect(() => {
+    if (!initialFilters.length || !data || !attributes.length) return;
+    if (hasAppliedInitialFilters.current) return;
+
+    const normalizedFilters = initialFilters
+      .filter((condition) => attributes.includes(condition.attribute))
+      .map((condition, index) => ({
+        ...condition,
+        id: condition.id || `filter-${Date.now()}-${index}`,
+      }));
+
+    if (normalizedFilters.length === 0) {
+      hasAppliedInitialFilters.current = true;
+      return;
+    }
+
+    setFilterConditions(normalizedFilters);
+    setPendingUrlApply(true);
+    hasAppliedInitialFilters.current = true;
+  }, [initialFilters, data, attributes]);
+
+  useEffect(() => {
+    if (!pendingUrlApply) return;
+    applyFilters();
+    setPendingUrlApply(false);
+  }, [pendingUrlApply, applyFilters]);
 
   // Clear all filters
   const clearFilters = () => {
     setFilterConditions([]);
     setActiveFilters([]);
     setFilteredCount(null);
-    onFilterChange(data);
+    onFilterChange(data, []);
   };
 
   // Get operator label from value
