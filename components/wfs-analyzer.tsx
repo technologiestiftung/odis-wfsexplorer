@@ -122,6 +122,7 @@ export default function WfsAnalyzer() {
   >(null);
   const [activeFilters, setActiveFilters] = useState<FilterCondition[]>([]);
   const [initialFilters, setInitialFilters] = useState<FilterCondition[]>([]);
+  const lastAnalyzedUrlRef = useRef<string | null>(null);
 
   const updateFiltersParameter = (filters: FilterCondition[]) => {
     if (typeof window === "undefined") return;
@@ -320,10 +321,15 @@ export default function WfsAnalyzer() {
       return;
     }
 
+    const nextUrl = url.trim();
+    const isWfsChange =
+      lastAnalyzedUrlRef.current !== null &&
+      lastAnalyzedUrlRef.current !== nextUrl;
+
     // Reset all states
     setError(null);
     setErrorType(null);
-    setAnalyzedUrl(url.trim());
+    setAnalyzedUrl(nextUrl);
     setIsLoadingLayers(true);
     setAvailableLayers([]);
     setSelectedLayer(null);
@@ -337,15 +343,17 @@ export default function WfsAnalyzer() {
     setHasProjectionIssue(false);
     setFocusedFeature(null);
     setSupportsJsonFormat(true);
-    setActiveFilters([]);
-    setInitialFilters([]);
-    updateFiltersParameter([]);
+    if (isWfsChange) {
+      setActiveFilters([]);
+      setInitialFilters([]);
+      updateFiltersParameter([]);
+    }
 
     // Update URL parameter
     updateUrlParameter(url);
 
     // Clean up the URL if needed
-    let cleanUrl = url.trim();
+    let cleanUrl = nextUrl;
 
     // If the URL already has GetCapabilities, extract the base URL
     if (
@@ -403,6 +411,7 @@ export default function WfsAnalyzer() {
         setErrorType("unknown");
       }
     } finally {
+      lastAnalyzedUrlRef.current = nextUrl;
       setIsLoadingLayers(false);
     }
   };
