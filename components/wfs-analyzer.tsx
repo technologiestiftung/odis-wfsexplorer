@@ -337,6 +337,9 @@ export default function WfsAnalyzer() {
     setHasProjectionIssue(false);
     setFocusedFeature(null);
     setSupportsJsonFormat(true);
+    setActiveFilters([]);
+    setInitialFilters([]);
+    updateFiltersParameter([]);
 
     // Update URL parameter
     updateUrlParameter(url);
