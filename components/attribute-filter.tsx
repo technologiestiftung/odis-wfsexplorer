@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +55,7 @@ const DATE_OPERATORS = [
 ];
 
 // Define filter condition interface
-interface FilterCondition {
+export interface FilterCondition {
   id: string;
   attribute: string;
   operator: string;
@@ -66,8 +66,9 @@ interface FilterCondition {
 interface AttributeFilterProps {
   data: any;
   attributes: string[];
-  onFilterChange: (filteredData: any) => void;
+  onFilterChange: (filteredData: any, filters: FilterCondition[]) => void;
   onActiveFiltersChange?: (filters: FilterCondition[]) => void; // Add this line
+  initialFilters?: FilterCondition[];
 }
 
 export function AttributeFilter({
@@ -75,6 +76,7 @@ export function AttributeFilter({
   attributes,
   onFilterChange,
   onActiveFiltersChange,
+  initialFilters = [],
 }: AttributeFilterProps) {
   const [filterConditions, setFilterConditions] = useState<FilterCondition[]>(
     []
@@ -82,6 +84,8 @@ export function AttributeFilter({
   const [activeFilters, setActiveFilters] = useState<FilterCondition[]>([]);
   const [filteredCount, setFilteredCount] = useState<number | null>(null);
   const [filteredRemoved, setFilteredRemoved] = useState<boolean>(false);
+  const [pendingUrlApply, setPendingUrlApply] = useState(false);
+  const hasAppliedInitialFilters = useRef(false);
 
   const [attributeValueSuggestions, setAttributeValueSuggestions] = useState<
     Record<string, string[]>
@@ -104,7 +108,7 @@ export function AttributeFilter({
       applyFilters();
     } else {
       // Pass the original data when no filters exist
-      onFilterChange(data);
+      onFilterChange(data, []);
     }
 
     // Generate suggestions for all attributes
@@ -151,7 +155,7 @@ export function AttributeFilter({
       applyFilters();
       setFilteredRemoved(false);
     }
-  }, [filteredRemoved]);
+  }, [filteredRemoved, applyFilters]);
 
   // Remove a filter condition
   const removeFilterCondition = (id: string) => {
@@ -254,10 +258,9 @@ export function AttributeFilter({
     }
   };
 
-  // Apply filters to data
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     if (!data || !data.features || filterConditions.length === 0) {
-      onFilterChange(data);
+      onFilterChange(data, []);
       setActiveFilters([]);
       setFilteredCount(null);
       if (onActiveFiltersChange) onActiveFiltersChange([]);
@@ -391,15 +394,48 @@ export function AttributeFilter({
     }
 
     // Pass filtered data to parent component
-    onFilterChange(filteredData);
-  };
+    onFilterChange(filteredData, [...filterConditions]);
+  }, [
+    data,
+    filterConditions,
+    attributeTypes,
+    onFilterChange,
+    onActiveFiltersChange,
+  ]);
+
+  useEffect(() => {
+    if (!initialFilters.length || !data || !attributes.length) return;
+    if (hasAppliedInitialFilters.current) return;
+
+    const normalizedFilters = initialFilters
+      .filter((condition) => attributes.includes(condition.attribute))
+      .map((condition, index) => ({
+        ...condition,
+        id: condition.id || `filter-${Date.now()}-${index}`,
+      }));
+
+    if (normalizedFilters.length === 0) {
+      hasAppliedInitialFilters.current = true;
+      return;
+    }
+
+    setFilterConditions(normalizedFilters);
+    setPendingUrlApply(true);
+    hasAppliedInitialFilters.current = true;
+  }, [initialFilters, data, attributes]);
+
+  useEffect(() => {
+    if (!pendingUrlApply) return;
+    applyFilters();
+    setPendingUrlApply(false);
+  }, [pendingUrlApply, applyFilters]);
 
   // Clear all filters
   const clearFilters = () => {
     setFilterConditions([]);
     setActiveFilters([]);
     setFilteredCount(null);
-    onFilterChange(data);
+    onFilterChange(data, []);
   };
 
   // Get operator label from value

@@ -45,7 +45,10 @@ import { LayerSelector } from "@/components/layer-selector";
 import { FeatureCountSelector } from "@/components/feature-count-selector";
 import { AttributeExplorer } from "@/components/attribute-explorer";
 import { AttributeStats } from "@/components/attribute-stats";
-import { AttributeFilter } from "@/components/attribute-filter";
+import {
+  AttributeFilter,
+  type FilterCondition,
+} from "@/components/attribute-filter";
 import { DownloadOptions } from "@/components/download-options";
 import { DownloadFilteredOptions } from "@/components/download-filtered-options";
 import dynamic from "next/dynamic";
@@ -117,17 +120,65 @@ export default function WfsAnalyzer() {
   const [errorType, setErrorType] = useState<
     "network" | "auth" | "notFound" | "badRequest" | "server" | "unknown" | null
   >(null);
-  const [activeFilters, setActiveFilters] = useState<any[]>([]);
+  const [activeFilters, setActiveFilters] = useState<FilterCondition[]>([]);
+  const [initialFilters, setInitialFilters] = useState<FilterCondition[]>([]);
+
+  const updateFiltersParameter = (filters: FilterCondition[]) => {
+    if (typeof window === "undefined") return;
+
+    const newUrl = new URL(window.location.href);
+
+    if (!filters.length) {
+      newUrl.searchParams.delete("filters");
+    } else {
+      const serializedFilters = JSON.stringify(
+        filters.map(({ attribute, operator, value, value2 }) => ({
+          attribute,
+          operator,
+          value,
+          ...(value2 ? { value2 } : {}),
+        }))
+      );
+      newUrl.searchParams.set("filters", serializedFilters);
+    }
+
+    window.history.pushState(
+      { path: newUrl.toString() },
+      "",
+      newUrl.toString()
+    );
+  };
+
+  const parseFiltersParameter = (value: string | null) => {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed.map((filter: Partial<FilterCondition>, index: number) => ({
+        id: filter.id || `filter-url-${Date.now()}-${index}`,
+        attribute: String(filter.attribute || ""),
+        operator: String(filter.operator || "equals"),
+        value: String(filter.value || ""),
+        value2: filter.value2 ? String(filter.value2) : undefined,
+      }));
+    } catch (error) {
+      console.warn("Unable to parse filters from URL parameter.", error);
+      return [];
+    }
+  };
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const wfsParam = params.get("wfs");
+      const filtersParam = params.get("filters");
 
       if (wfsParam) {
         console.log("Loading WFS from URL parameter:", wfsParam);
         setWfsUrl(wfsParam);
+        setInitialFilters(parseFiltersParameter(filtersParam));
         setTimeout(() => {
           analyzeWfsUrl(wfsParam);
         }, 0);
@@ -207,6 +258,7 @@ export default function WfsAnalyzer() {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete("wfs");
       newUrl.searchParams.delete("layer");
+      newUrl.searchParams.delete("filters");
 
       window.history.pushState(
         { path: newUrl.toString() },
@@ -521,7 +573,10 @@ export default function WfsAnalyzer() {
   };
 
   // Handle filter changes
-  const handleFilterChange = (newFilteredData: any, filters: any[]) => {
+  const handleFilterChange = (
+    newFilteredData: any,
+    filters: FilterCondition[]
+  ) => {
     if (newFilteredData && wfsData) {
       // Add total feature count to the filtered data
       newFilteredData.totalFeatures = wfsData.features.length;
@@ -533,7 +588,9 @@ export default function WfsAnalyzer() {
         wfsData &&
         newFilteredData.features.length !== wfsData.features.length
     );
-    setActiveFilters(filters);
+    const normalizedFilters = filters || [];
+    setActiveFilters(normalizedFilters);
+    updateFiltersParameter(normalizedFilters);
   };
 
   // Handle example dataset selection
@@ -1406,6 +1463,7 @@ export default function WfsAnalyzer() {
                       onFilterChange={(newFilteredData, filters) =>
                         handleFilterChange(newFilteredData, filters)
                       }
+                      initialFilters={initialFilters}
                     />
                   </CardContent>
                 </Card>
