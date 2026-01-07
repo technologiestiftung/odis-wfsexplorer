@@ -1158,7 +1158,7 @@ export async function fetchWfsData(
     searchParams.set("outputFormat", outputFormat);
     searchParams.set(
       "count",
-      maxFeatures === 0 ? "100000" : maxFeatures.toString()
+      maxFeatures === 0 ? "1000000" : maxFeatures.toString()
     );
 
     // Use the source projection
@@ -1473,7 +1473,7 @@ export async function fetchWfsDataForDownload(
     searchParams.set("outputFormat", outputFormat);
     searchParams.set(
       "count",
-      maxFeatures === 0 ? "100000" : maxFeatures.toString()
+      maxFeatures === 0 ? "1000000" : maxFeatures.toString()
     );
 
     // Use the source projection
@@ -1609,7 +1609,7 @@ export async function fetchWfsDataForDownload(
 
   try {
     // If maxFeatures is 0, it means download all features
-    const effectiveMaxFeatures = maxFeatures === 0 ? 100000 : maxFeatures;
+    const effectiveMaxFeatures = maxFeatures === 0 ? 1000000 : maxFeatures;
 
     if (useNativeProjection) {
       // Fetch data in native projection
