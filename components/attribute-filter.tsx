@@ -86,6 +86,7 @@ export function AttributeFilter({
   const [filteredRemoved, setFilteredRemoved] = useState<boolean>(false);
   const [pendingUrlApply, setPendingUrlApply] = useState(false);
   const hasAppliedInitialFilters = useRef(false);
+  const previousDataRef = useRef<any>(null);
 
   const [attributeValueSuggestions, setAttributeValueSuggestions] = useState<
     Record<string, string[]>
@@ -258,12 +259,17 @@ export function AttributeFilter({
       setFilterConditions([]);
       setActiveFilters([]);
       setFilteredCount(null);
+      previousDataRef.current = null;
       return;
     }
 
-    // Only reset if it's a new dataset (check if features length changed significantly)
-    if (activeFilters.length > 0) {
-      // Re-apply existing filters to the new data
+    const isNewDataset = previousDataRef.current !== data;
+    previousDataRef.current = data;
+
+    if (!isNewDataset) return;
+
+    // Re-apply existing filters to the new data
+    if (filterConditions.length > 0) {
       applyFilters();
     } else {
       // Pass the original data when no filters exist
@@ -280,7 +286,7 @@ export function AttributeFilter({
 
       setAttributeValueSuggestions(suggestions);
     }
-  }, [data, attributes, activeFilters.length, applyFilters, onFilterChange]);
+  }, [data, attributes, filterConditions.length, applyFilters, onFilterChange]);
 
   // Add a new filter condition
   const addFilterCondition = () => {
