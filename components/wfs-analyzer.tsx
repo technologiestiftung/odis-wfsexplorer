@@ -1573,7 +1573,7 @@ export default function WfsAnalyzer() {
         {/* Main content area with white background */}
         <div className="bg-white rounded-xl p-8 md:p-12 mb-8 shadow-lg">
           {/* Description */}
-          <div className="mb-8 relative">
+          <div className="mb-6 relative">
             <div>
               <div className="w-full md:w-1/2">
                 <h1 className="text-3xl font-bold text-odis-dark mb-2">
@@ -1582,7 +1582,7 @@ export default function WfsAnalyzer() {
                 </h1>
 
                 <img
-                  className="w-8 sm:w-12 md:w-20"
+                  className="w-6 sm:w-10 md:w-16"
                   style={{
                     position: "absolute",
                     right: "0px",
@@ -1595,7 +1595,7 @@ export default function WfsAnalyzer() {
                 />
 
                 {/* </h2> */}
-                <p className="mb-4">
+                <p className="mb-2">
                   {t("toolDescription1")}{" "}
                   <span
                     data-tooltip-id="url-tooltip"
@@ -1860,25 +1860,6 @@ export default function WfsAnalyzer() {
                   </div>
                 </div>
               )}
-
-              {wfsData && wfsUrl && !error && (
-                <div className="absolute right-0 top-full mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1 hover:bg-active-light"
-                    onClick={copyUrlToClipboard}
-                    title={t("shareWfs")}
-                  >
-                    {isCopied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Share2 className="h-4 w-4" />
-                    )}
-                    {/* {isCopied ? t("copied") : t("shareWfs")} */}
-                  </Button>
-                </div>
-              )}
             </div>
             {datasetInfoMessage && (
               <div className="mt-2 text-xs text-amber-700">
@@ -2023,39 +2004,53 @@ export default function WfsAnalyzer() {
 
           {filteredData && !error && (
             <div className="space-y-8">
-              {/* Active Service/Layer Title & Change Layer Button */}
+              {/* Active Service/Layer Title & Actions */}
               {selectedLayer && (
-                <div className="flex flex-col sm:flex-row sm:items-center bg-odis-extra-light justify-between gap-4 border border-slate-100 rounded-lg px-4 py-3 mb-2 shadow-sm">
-                  <div className="flex items-center gap-3 p-2">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">
-                        {t("activeDataset")}
-                      </p>
-                      <h2 className="text-lg font-bold text-slate-800 leading-tight">
-                        {selectedLayer.title || selectedLayer.id}
-                      </h2>
-                    </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-odis-light pl-4 py-1 mb-2">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">
+                      {t("activeDataset")}
+                    </p>
+                    <h2 className="text-2xl font-bold text-slate-800 leading-tight">
+                      {selectedLayer.title || selectedLayer.id}
+                    </h2>
                   </div>
-                  {availableLayers.length > 1 && (
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    {availableLayers.length > 1 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-odis-light border-slate-200 hover:bg-slate-50 font-medium flex items-center gap-1.5 h-9"
+                        onClick={() => {
+                          setSelectedLayer(null);
+                          const newUrl = new URL(window.location.href);
+                          newUrl.searchParams.delete("layer");
+                          window.history.pushState(
+                            { path: newUrl.toString() },
+                            "",
+                            newUrl.toString()
+                          );
+                        }}
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                        {t("changeLayer")}
+                      </Button>
+                    )}
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="text-odis-light hover:bg-odis-extra-light font-medium flex items-center gap-1.5"
-                      onClick={() => {
-                        setSelectedLayer(null);
-                        const newUrl = new URL(window.location.href);
-                        newUrl.searchParams.delete("layer");
-                        window.history.pushState(
-                          { path: newUrl.toString() },
-                          "",
-                          newUrl.toString()
-                        );
-                      }}
+                      className="flex items-center gap-1.5 border-slate-200 text-odis-light hover:bg-slate-50 h-9"
+                      onClick={copyUrlToClipboard}
+                      title={t("shareWfs")}
                     >
-                      <ArrowLeftRight className="h-4 w-4" />
-                      {t("changeLayer")}
+                      {isCopied ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Share2 className="h-4 w-4" />
+                      )}
+                      <span>{isCopied ? t("copied") : t("share")}</span>
                     </Button>
-                  )}
+                  </div>
                 </div>
               )}
 
