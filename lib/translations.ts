@@ -20,6 +20,7 @@ export type TranslationKey =
   | "layers"
   | "layersDescription"
   | "currentLayer"
+  | "activeDataset"
   | "layerInfoDescription"
   | "layer"
   | "layerName"
@@ -59,6 +60,7 @@ export type TranslationKey =
   | "ofTotal"
   | "attributes"
   | "geometryType"
+  | "numberOfAttributes"
   | "usingWGS84"
   | "mapPreview"
   | "mapPreviewDescription"
@@ -307,6 +309,7 @@ export const enTranslations: Record<TranslationKey, string> = {
   layersDescription:
     "This WFS service contains multiple layers. Please select one to analyze.",
   currentLayer: "About the Data",
+  activeDataset: "Active Dataset",
   layerInfoDescription: "Metadata from the loaded WFS layer",
   layer: "Layer:",
   layerName: "Name",
@@ -345,6 +348,7 @@ export const enTranslations: Record<TranslationKey, string> = {
   filteredFrom: "filtered from",
   ofTotal: "of",
   attributes: "Attributes",
+  numberOfAttributes: "Number of Attributes",
   geometryType: "Geometry Type",
   usingWGS84: "Using WGS84 (EPSG:4326) projection",
   mapPreview: "Map Preview",
@@ -466,7 +470,7 @@ export const enTranslations: Record<TranslationKey, string> = {
   wgs84: "WGS84 (EPSG:4326)",
   map: "Map",
   loaded: "Loaded",
-  share: "Share",
+  share: "Share View",
   shareWfs: "Share this Dataset",
   copied: "Copied!",
   minimumValue: "Minimum Value",
@@ -496,7 +500,7 @@ export const enTranslations: Record<TranslationKey, string> = {
   toolDescription2:
     "directly in the browser. Insert a WFS URL or select a sample data set.",
   keyFeatures: "Key Features",
-  metadataInfo: "View Metadata",
+  metadataInfo: "Metadata",
   interactiveMetadataInfo: "Explore Metadata",
   interactiveMetadataInfoDescription: "Data description and other information",
   mapVisualization: "Map Preview",
@@ -622,6 +626,7 @@ export const deTranslations: Record<TranslationKey, string> = {
   layersDescription:
     "Dieser WFS-Dienst enthält mehrere Layer. Wählen eine zur Analyse aus.",
   currentLayer: "Metadaten explorieren",
+  activeDataset: "Aktiver Datensatz",
   layerInfoDescription: "Metadaten aus der geladene Layer",
   layer: "Layer:",
   layerName: "Name",
@@ -661,6 +666,7 @@ export const deTranslations: Record<TranslationKey, string> = {
   filteredFrom: "gefiltert aus",
   ofTotal: "von",
   attributes: "Attribute",
+  numberOfAttributes: "Anzahl der Attribute",
   geometryType: "Geometrietyp",
   usingWGS84: "Verwendung von WGS84 (EPSG:4326) Projektion",
   mapPreview: "Kartenvorschau",
@@ -781,7 +787,7 @@ export const deTranslations: Record<TranslationKey, string> = {
   wgs84: "WGS84 (EPSG:4326)",
   map: "Karte",
   loaded: "Geladen",
-  share: "Teilen",
+  share: "Ansicht Teilen",
   shareWfs: "Diesen Datensatz teilen",
   copied: "Kopiert!",
   minimumValue: "Minimalwert",
@@ -811,7 +817,7 @@ export const deTranslations: Record<TranslationKey, string> = {
   toolDescription2:
     "direkt im Browser. Füge eine WFS-URL ein oder wähle einen Beispieldatensatz.",
   keyFeatures: "Hauptfunktionen",
-  metadataInfo: "Metadaten einsehen",
+  metadataInfo: "Metadaten",
   interactiveMetadataInfo: "Metadaten explorieren",
   interactiveMetadataInfoDescription:
     "Datenbeschreibung und andere Informationen",

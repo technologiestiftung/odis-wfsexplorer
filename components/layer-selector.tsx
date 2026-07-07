@@ -6,7 +6,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
 import type { LayerInfo } from "@/lib/wfs-service";
 import { useLanguage } from "@/lib/language-context";
@@ -20,7 +20,7 @@ interface LayerSelectorProps {
 export function LayerSelector({
   layers,
   onSelectLayer,
-  isLoading,
+  isLoading
 }: LayerSelectorProps) {
   const { t } = useLanguage();
 
@@ -47,14 +47,9 @@ export function LayerSelector({
             >
               <div className="flex flex-col items-start">
                 <span className="font-medium">{layer.title || layer.id}</span>
-                {layer.abstract && (
+                {layer.abstract && layer.title !== layer.abstract && (
                   <span className="text-sm text-muted-foreground mt-1">
                     {layer.abstract}
-                  </span>
-                )}
-                {layer.projections.length > 0 && (
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Projections: {layer.projections.join(", ")}
                   </span>
                 )}
               </div>

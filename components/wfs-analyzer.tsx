@@ -33,7 +33,9 @@ import {
   WandSparkles,
   TableOfContents,
   Sigma,
-  X
+  X,
+  Layers,
+  ArrowLeftRight
 } from "lucide-react";
 import {
   fetchWfsCapabilities,
@@ -555,7 +557,7 @@ export default function WfsAnalyzer() {
   // Also handles single-layer WFS when bbox/filters need to be applied
   const urlLayerLoadedRef = useRef(false);
   useEffect(() => {
-    console.log('Layer load effect running:', {
+    console.log("Layer load effect running:", {
       urlLayerLoadedRef: urlLayerLoadedRef.current,
       availableLayersLength: availableLayers.length,
       bboxFilter,
@@ -594,14 +596,20 @@ export default function WfsAnalyzer() {
       ) {
         // Single layer WFS with bbox/filters from URL - need to fetch with the filters applied
         layerToLoad = availableLayers[0];
-        console.log('Single layer with bbox/filters, will load layer:', layerToLoad?.id);
+        console.log(
+          "Single layer with bbox/filters, will load layer:",
+          layerToLoad?.id
+        );
       }
 
       if (layerToLoad) {
         urlLayerLoadedRef.current = true;
         const layer = layerToLoad;
         const bboxToUse = bboxFilter; // Capture in closure
-        console.log('Setting urlLayerLoadedRef=true, scheduling fetch with bbox:', bboxToUse);
+        console.log(
+          "Setting urlLayerLoadedRef=true, scheduling fetch with bbox:",
+          bboxToUse
+        );
         setTimeout(() => {
           setSelectedLayer(layer);
           // Use captured bboxFilter value
@@ -752,7 +760,11 @@ export default function WfsAnalyzer() {
 
   // Function to analyze a WFS URL
   // urlBbox and urlFilters are passed from initial URL parsing to avoid stale state issues
-  const analyzeWfsUrl = async (url: string, urlBbox?: BBoxFilter | null, urlFilters?: AttributeFilter[]) => {
+  const analyzeWfsUrl = async (
+    url: string,
+    urlBbox?: BBoxFilter | null,
+    urlFilters?: AttributeFilter[]
+  ) => {
     if (!url.trim()) {
       setError(t("enterWfsUrl"));
       setErrorType("unknown");
@@ -763,10 +775,13 @@ export default function WfsAnalyzer() {
     const isWfsChange =
       lastAnalyzedUrlRef.current !== null &&
       lastAnalyzedUrlRef.current !== nextUrl;
-    
+
     // Use passed values (for initial load) or current state (for subsequent calls)
     const hasBboxFromUrl = urlBbox !== undefined ? !!urlBbox : !!bboxFilter;
-    const hasFiltersFromUrl = urlFilters !== undefined ? urlFilters.length > 0 : initialFilters.length > 0;
+    const hasFiltersFromUrl =
+      urlFilters !== undefined
+        ? urlFilters.length > 0
+        : initialFilters.length > 0;
 
     // Reset all states
     setError(null);
@@ -823,12 +838,19 @@ export default function WfsAnalyzer() {
         setSelectedLayer(layers[0]);
         // Only auto-fetch if we don't have bbox/filters from URL that need to be applied
         // (those will be handled by the layer auto-select effect after state updates)
-        console.log('analyzeWfsUrl: single layer, hasBboxFromUrl:', hasBboxFromUrl, 'hasFiltersFromUrl:', hasFiltersFromUrl);
+        console.log(
+          "analyzeWfsUrl: single layer, hasBboxFromUrl:",
+          hasBboxFromUrl,
+          "hasFiltersFromUrl:",
+          hasFiltersFromUrl
+        );
         if (!hasBboxFromUrl && !hasFiltersFromUrl) {
-          console.log('analyzeWfsUrl: calling fetchLayerData (no URL params)');
+          console.log("analyzeWfsUrl: calling fetchLayerData (no URL params)");
           await fetchLayerData(layers[0], cleanUrl);
         } else {
-          console.log('analyzeWfsUrl: NOT calling fetchLayerData (will let effect handle with bbox/filters)');
+          console.log(
+            "analyzeWfsUrl: NOT calling fetchLayerData (will let effect handle with bbox/filters)"
+          );
         }
       }
       // If multiple layers, wait for user selection
@@ -1085,7 +1107,7 @@ export default function WfsAnalyzer() {
 
   // Update the fetchLayerData function to properly pass the URL to fetchLayerDataWithMaxFeatures
   const fetchLayerData = async (layer: LayerInfo, urlOverride?: string) => {
-    console.log('fetchLayerData called, current bboxFilter state:', bboxFilter);
+    console.log("fetchLayerData called, current bboxFilter state:", bboxFilter);
     const urlToUse = urlOverride || wfsUrl;
     await fetchLayerDataWithMaxFeatures(
       layer,
@@ -1157,8 +1179,8 @@ export default function WfsAnalyzer() {
     urlOverride?: string,
     bbox?: BBoxFilter | null
   ) => {
-    console.log('fetchLayerDataWithMaxFeatures called with bbox:', bbox);
-    console.trace('fetchLayerDataWithMaxFeatures stack trace');
+    console.log("fetchLayerDataWithMaxFeatures called with bbox:", bbox);
+    console.trace("fetchLayerDataWithMaxFeatures stack trace");
     setIsLoading(true);
     setError(null);
     setErrorType(null);
@@ -1551,7 +1573,7 @@ export default function WfsAnalyzer() {
         {/* Main content area with white background */}
         <div className="bg-white rounded-xl p-8 md:p-12 mb-8 shadow-lg">
           {/* Description */}
-          <div className="mb-8 relative">
+          <div className="mb-6 relative">
             <div>
               <div className="w-full md:w-1/2">
                 <h1 className="text-3xl font-bold text-odis-dark mb-2">
@@ -1560,7 +1582,7 @@ export default function WfsAnalyzer() {
                 </h1>
 
                 <img
-                  className="w-8 sm:w-12 md:w-20"
+                  className="w-6 sm:w-10 md:w-16"
                   style={{
                     position: "absolute",
                     right: "0px",
@@ -1573,7 +1595,7 @@ export default function WfsAnalyzer() {
                 />
 
                 {/* </h2> */}
-                <p className="mb-4">
+                <p className="mb-2">
                   {t("toolDescription1")}{" "}
                   <span
                     data-tooltip-id="url-tooltip"
@@ -1838,25 +1860,6 @@ export default function WfsAnalyzer() {
                   </div>
                 </div>
               )}
-
-              {wfsData && wfsUrl && !error && (
-                <div className="absolute right-0 top-full mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1 hover:bg-active-light"
-                    onClick={copyUrlToClipboard}
-                    title={t("shareWfs")}
-                  >
-                    {isCopied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Share2 className="h-4 w-4" />
-                    )}
-                    {/* {isCopied ? t("copied") : t("shareWfs")} */}
-                  </Button>
-                </div>
-              )}
             </div>
             {datasetInfoMessage && (
               <div className="mt-2 text-xs text-amber-700">
@@ -1980,325 +1983,6 @@ export default function WfsAnalyzer() {
             </div>
           )}
 
-          {/* Only show layer information if there's no error */}
-          {selectedLayer && !error ? (
-            <div className="space-y-4 mb-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="tracking-tight flex items-center text-lg font-medium">
-                    <AlertCircle className="h-5 w-5 mr-2 text-odis-light" />
-                    {t("metadataInfo")}
-                    {availableLayers.length > 1 && (
-                      <button
-                        className="p-0 h-auto ml-2 text-odis-light text-sm line-base"
-                        onClick={() => {
-                          setSelectedLayer(null);
-                          const newUrl = new URL(window.location.href);
-                          newUrl.searchParams.delete("layer");
-                          window.history.pushState(
-                            { path: newUrl.toString() },
-                            "",
-                            newUrl.toString()
-                          );
-                        }}
-                      >
-                        {t("changeLayer")}
-                      </button>
-                    )}
-                  </CardTitle>
-                  <CardDescription>
-                    {t("interactiveMetadataInfoDescription")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="bg-odis-extra-light pt-4 border-t text-sm rounded-b-lg">
-                  <div className="flex flex-col gap-3">
-                    <>
-                      {/* Desktop/Table Layout (shown on md and up) */}
-                      <table className="hidden md:table table-auto w-full text-left border-collapse">
-                        <tbody>
-                          <tr>
-                            <th className="pr-4 align-top pb-2 font-normal">
-                              {t("layerName")}
-                            </th>
-                            <td className="font-bold align-top text-gray-600 ">
-                              {selectedLayer.title || selectedLayer.id}
-                            </td>
-                          </tr>
-
-                          {selectedLayer.abstract && (
-                            <tr>
-                              <th className="pr-4 align-top pb-2 font-normal">
-                                {t("layerDescription")}
-                              </th>
-                              <td className="text-gray-600 align-top font-light">
-                                {selectedLayer.abstract}
-                              </td>
-                            </tr>
-                          )}
-
-                          {selectedLayer.keywords?.length > 0 && (
-                            <tr>
-                              <th className="pr-4 align-top pb-2 font-normal">
-                                {t("keywords")}
-                              </th>
-                              <td className="text-gray-600 align-top font-light">
-                                {selectedLayer.keywords.join(", ")}
-                              </td>
-                            </tr>
-                          )}
-
-                          {(selectedLayer.contactPerson ||
-                            selectedLayer.contactOrganization ||
-                            selectedLayer.contactEmail) && (
-                            <tr>
-                              <th className="pr-4 align-top pb-2 font-normal">
-                                {t("contact")}
-                              </th>
-                              <td className="text-gray-600 align-top font-light">
-                                {selectedLayer.contactPerson &&
-                                  `${selectedLayer.contactPerson}, `}
-                                {selectedLayer.contactOrganization &&
-                                  `${selectedLayer.contactOrganization}, `}
-                                {selectedLayer.contactEmail}
-                              </td>
-                            </tr>
-                          )}
-
-                          {selectedLayer.fees && (
-                            <tr>
-                              <th className="pr-4 align-top pb-2 font-normal">
-                                {t("fees")}
-                              </th>
-                              <td className="text-gray-600 align-top font-light">
-                                {selectedLayer.fees}
-                              </td>
-                            </tr>
-                          )}
-
-                          {selectedLayer.accessConstraints && (
-                            <tr>
-                              <th className="pr-4 align-top pb-2 font-normal">
-                                {t("accessConstraints")}
-                              </th>
-                              <td className="text-gray-600 align-top font-light">
-                                {selectedLayer.accessConstraints}
-                              </td>
-                            </tr>
-                          )}
-
-                          {selectedLayer.metadataUrl && (
-                            <tr>
-                              <th className="pr-4 align-top pb-2 font-normal">
-                                {t("metadataUrl")}
-                              </th>
-                              <td>
-                                <a
-                                  href={selectedLayer.metadataUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-odis-light hover:underline inline-flex items-center"
-                                >
-                                  {t("viewFullMetadata")}
-                                  <ExternalLink className="h-3 w-3 ml-1" />
-                                </a>
-                              </td>
-                            </tr>
-                          )}
-
-                          {selectedLayer.bounds && (
-                            <tr>
-                              <th className="pr-4 align-top pb-2 font-normal">
-                                {t("bounds")}
-                              </th>
-                              <td className="text-gray-600 align-top font-light">
-                                minX: {selectedLayer.bounds.minx}, minY:{" "}
-                                {selectedLayer.bounds.miny}, maxX:{" "}
-                                {selectedLayer.bounds.maxx}, maxY:{" "}
-                                {selectedLayer.bounds.maxy}
-                                {selectedLayer.bounds.crs &&
-                                  ` (${selectedLayer.bounds.crs})`}
-                              </td>
-                            </tr>
-                          )}
-
-                          <tr>
-                            <th className="pr-4 align-top pb-2 font-normal">
-                              {t("displayProjection")}
-                            </th>
-                            <td className="text-gray-600 align-top font-light">
-                              WGS84 (EPSG:4326)
-                            </td>
-                          </tr>
-
-                          <tr>
-                            <th className="pr-4 align-top pb-2 font-normal">
-                              {t("sourceProjection")}
-                            </th>
-                            <td className="text-gray-600 align-top font-light">
-                              {sourceProjection}
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-
-                      {/* Mobile/Fallback Layout (shown below md) */}
-                      <div className="md:hidden space-y-4">
-                        <div>
-                          <span>{t("layerName")}</span>
-                          <p className="text-gray-900 font-light">
-                            {selectedLayer.title || selectedLayer.id}
-                          </p>
-                        </div>
-
-                        {selectedLayer.abstract && (
-                          <div>
-                            <span>{t("layerDescription")}</span>
-                            <p className="text-gray-900 font-light">
-                              {selectedLayer.abstract}
-                            </p>
-                          </div>
-                        )}
-
-                        {selectedLayer.keywords?.length > 0 && (
-                          <div>
-                            <span>{t("keywords")}</span>
-                            <p className="text-gray-900 font-light">
-                              {selectedLayer.keywords.join(", ")}
-                            </p>
-                          </div>
-                        )}
-
-                        {(selectedLayer.contactPerson ||
-                          selectedLayer.contactOrganization ||
-                          selectedLayer.contactEmail) && (
-                          <div>
-                            <span>{t("contact")}</span>
-                            <p className="text-gray-900 font-light">
-                              {selectedLayer.contactPerson &&
-                                `${selectedLayer.contactPerson}, `}
-                              {selectedLayer.contactOrganization &&
-                                `${selectedLayer.contactOrganization}, `}
-                              {selectedLayer.contactEmail}
-                            </p>
-                          </div>
-                        )}
-
-                        {selectedLayer.fees && (
-                          <div>
-                            <span>{t("fees")}</span>
-                            <p className="text-gray-900 font-light">
-                              {selectedLayer.fees}
-                            </p>
-                          </div>
-                        )}
-
-                        {selectedLayer.accessConstraints && (
-                          <div>
-                            <span>{t("accessConstraints")}</span>
-                            <p className="text-gray-900 font-light">
-                              {selectedLayer.accessConstraints}
-                            </p>
-                          </div>
-                        )}
-
-                        {selectedLayer.metadataUrl && (
-                          <div>
-                            <span>{t("metadataUrl")}</span>
-                            <a
-                              href={selectedLayer.metadataUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-odis-light hover:underline inline-flex items-center"
-                            >
-                              {t("viewFullMetadata")}
-                              <ExternalLink className="h-3 w-3 ml-1" />
-                            </a>
-                          </div>
-                        )}
-
-                        {selectedLayer.bounds && (
-                          <div>
-                            <span>{t("bounds")}</span>
-                            <p className="text-gray-900 font-light">
-                              minX: {selectedLayer.bounds.minx}, minY:{" "}
-                              {selectedLayer.bounds.miny}, maxX:{" "}
-                              {selectedLayer.bounds.maxx}, maxY:{" "}
-                              {selectedLayer.bounds.maxy}
-                              {selectedLayer.bounds.crs &&
-                                ` (${selectedLayer.bounds.crs})`}
-                            </p>
-                          </div>
-                        )}
-
-                        <div>
-                          <span>{t("displayProjection")}</span>
-                          <p className="text-gray-900 font-light">
-                            WGS84 (EPSG:4326)
-                          </p>
-                        </div>
-
-                        <div>
-                          <span>{t("sourceProjection")}</span>
-                          <p className="text-gray-900 font-light">
-                            {sourceProjection}
-                          </p>
-                        </div>
-                      </div>
-                    </>
-
-                    {/* WFS Summary Information */}
-                    {filteredData && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
-                        <div className="bg-white p-3 border ">
-                          <p className="text-sm mb-1">{t("featuresLoaded")}</p>
-                          {isMaxFeaturesUpdating ? (
-                            <div className="flex items-center gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin text-odis-light" />
-                              <span>{t("loading")}</span>
-                            </div>
-                          ) : (
-                            <p className="text-lg font-bold">
-                              {filteredData.features.length.toLocaleString()}
-                              {isFiltered && filteredData.totalFeatures && (
-                                <span className="text-xs font-normal text-gray-500 ml-1">
-                                  {t("filteredFrom")}{" "}
-                                  {filteredData.totalFeatures.toLocaleString()}{" "}
-                                  {t("total")}
-                                </span>
-                              )}
-                            </p>
-                          )}
-                        </div>
-                        <div className="bg-white p-3 border ">
-                          <p className="text-sm mb-1">{t("attributes")}</p>
-                          <p className="text-lg font-bold">
-                            {attributes.length}
-                          </p>
-                        </div>
-                        <div className="bg-white p-3 border ">
-                          <p className="text-sm  mb-1">{t("geometryType")}</p>
-                          <p className="text-lg font-bold">
-                            {hasGeometry
-                              ? filteredData.features[0]?.geometry?.type ||
-                                t("unknown")
-                              : t("noGeometry")}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <FeatureCountSelector
-                maxFeatures={maxFeatures}
-                onMaxFeaturesChange={handleMaxFeaturesChange}
-                totalFeatureCount={totalFeatureCount}
-                isLoadingCount={isLoadingCount || isMaxFeaturesUpdating}
-              />
-            </div>
-          ) : null}
-
           {(isLoading || isMaxFeaturesUpdating) && (
             <div className="flex justify-center items-center py-12">
               <div className="bg-white p-6 rounded-lg shadow-sm flex flex-col items-center">
@@ -2320,6 +2004,56 @@ export default function WfsAnalyzer() {
 
           {filteredData && !error && (
             <div className="space-y-8">
+              {/* Active Service/Layer Title & Actions */}
+              {selectedLayer && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-odis-light pl-4 py-1 mb-2">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">
+                      {t("activeDataset")}
+                    </p>
+                    <h2 className="text-2xl font-bold text-slate-800 leading-tight">
+                      {selectedLayer.title || selectedLayer.id}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    {availableLayers.length > 1 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1.5 border-slate-200 h-9 transition-colors bg-background hover:text-accent-foreground hover:bg-active-light"
+                        onClick={() => {
+                          setSelectedLayer(null);
+                          const newUrl = new URL(window.location.href);
+                          newUrl.searchParams.delete("layer");
+                          window.history.pushState(
+                            { path: newUrl.toString() },
+                            "",
+                            newUrl.toString()
+                          );
+                        }}
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                        {t("changeLayer")}
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1.5 border-slate-200 h-9 transition-colors bg-background hover:text-accent-foreground hover:bg-active-light"
+                      onClick={copyUrlToClipboard}
+                      title={t("shareWfs")}
+                    >
+                      {isCopied ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Share2 className="h-4 w-4" />
+                      )}
+                      <span>{isCopied ? t("copied") : t("share")}</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* 1. Map View - Always shown */}
               {hasGeometry && !hasProjectionIssue && (
                 <div ref={mapContainerRef} data-map-container className="mb-6">
@@ -2345,6 +2079,307 @@ export default function WfsAnalyzer() {
                   </Card>
                 </div>
               )}
+
+              <FeatureCountSelector
+                maxFeatures={maxFeatures}
+                onMaxFeaturesChange={handleMaxFeaturesChange}
+                totalFeatureCount={totalFeatureCount}
+                isLoadingCount={isLoadingCount || isMaxFeaturesUpdating}
+              />
+
+              {/* Only show layer information if there's no error */}
+              {selectedLayer && !error ? (
+                <div className="space-y-4 mb-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="tracking-tight flex items-center text-lg font-medium">
+                        <AlertCircle className="h-5 w-5 mr-2 text-odis-light" />
+                        {t("metadataInfo")}
+                      </CardTitle>
+                      <CardDescription>
+                        {t("interactiveMetadataInfoDescription")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="bg-odis-extra-light pt-4 border-t text-sm rounded-b-lg">
+                      <div className="flex flex-col gap-3">
+                        <>
+                          {/* Desktop/Table Layout (shown on md and up) */}
+                          <table className="hidden md:table table-auto w-full text-left border-collapse">
+                            <tbody>
+                              <tr>
+                                <th className="pr-4 align-top pb-2 font-normal">
+                                  {t("layerName")}
+                                </th>
+                                <td className="font-bold align-top text-gray-600 ">
+                                  {selectedLayer.title || selectedLayer.id}
+                                </td>
+                              </tr>
+
+                              {selectedLayer.abstract && (
+                                <tr>
+                                  <th className="pr-4 align-top pb-2 font-normal">
+                                    {t("layerDescription")}
+                                  </th>
+                                  <td className="text-gray-600 align-top font-light">
+                                    {selectedLayer.abstract}
+                                  </td>
+                                </tr>
+                              )}
+
+                              {selectedLayer.keywords?.length > 0 && (
+                                <tr>
+                                  <th className="pr-4 align-top pb-2 font-normal">
+                                    {t("keywords")}
+                                  </th>
+                                  <td className="text-gray-600 align-top font-light">
+                                    {selectedLayer.keywords.join(", ")}
+                                  </td>
+                                </tr>
+                              )}
+
+                              {(selectedLayer.contactPerson ||
+                                selectedLayer.contactOrganization ||
+                                selectedLayer.contactEmail) && (
+                                <tr>
+                                  <th className="pr-4 align-top pb-2 font-normal">
+                                    {t("contact")}
+                                  </th>
+                                  <td className="text-gray-600 align-top font-light">
+                                    {selectedLayer.contactPerson &&
+                                      `${selectedLayer.contactPerson}, `}
+                                    {selectedLayer.contactOrganization &&
+                                      `${selectedLayer.contactOrganization}, `}
+                                    {selectedLayer.contactEmail}
+                                  </td>
+                                </tr>
+                              )}
+
+                              {selectedLayer.fees && (
+                                <tr>
+                                  <th className="pr-4 align-top pb-2 font-normal">
+                                    {t("fees")}
+                                  </th>
+                                  <td className="text-gray-600 align-top font-light">
+                                    {selectedLayer.fees}
+                                  </td>
+                                </tr>
+                              )}
+
+                              {selectedLayer.accessConstraints && (
+                                <tr>
+                                  <th className="pr-4 align-top pb-2 font-normal">
+                                    {t("accessConstraints")}
+                                  </th>
+                                  <td className="text-gray-600 align-top font-light">
+                                    {selectedLayer.accessConstraints}
+                                  </td>
+                                </tr>
+                              )}
+
+                              {selectedLayer.metadataUrl && (
+                                <tr>
+                                  <th className="pr-4 align-top pb-2 font-normal">
+                                    {t("metadataUrl")}
+                                  </th>
+                                  <td>
+                                    <a
+                                      href={selectedLayer.metadataUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-odis-light hover:underline inline-flex items-center"
+                                    >
+                                      {t("viewFullMetadata")}
+                                      <ExternalLink className="h-3 w-3 ml-1" />
+                                    </a>
+                                  </td>
+                                </tr>
+                              )}
+
+                              {selectedLayer.bounds && (
+                                <tr>
+                                  <th className="pr-4 align-top pb-2 font-normal">
+                                    {t("bounds")}
+                                  </th>
+                                  <td className="text-gray-600 align-top font-light">
+                                    minX: {selectedLayer.bounds.minx}, minY:{" "}
+                                    {selectedLayer.bounds.miny}, maxX:{" "}
+                                    {selectedLayer.bounds.maxx}, maxY:{" "}
+                                    {selectedLayer.bounds.maxy}
+                                    {selectedLayer.bounds.crs &&
+                                      ` (${selectedLayer.bounds.crs})`}
+                                  </td>
+                                </tr>
+                              )}
+
+                              <tr>
+                                <th className="pr-4 align-top pb-2 font-normal">
+                                  {t("displayProjection")}
+                                </th>
+                                <td className="text-gray-600 align-top font-light">
+                                  WGS84 (EPSG:4326)
+                                </td>
+                              </tr>
+
+                              <tr>
+                                <th className="pr-4 align-top pb-2 font-normal">
+                                  {t("sourceProjection")}
+                                </th>
+                                <td className="text-gray-600 align-top font-light">
+                                  {sourceProjection}
+                                </td>
+                              </tr>
+
+                              <tr>
+                                <th className="pr-4 align-top pb-2 font-normal">
+                                  {t("numberOfAttributes")}
+                                </th>
+                                <td className="text-gray-600 align-top font-light">
+                                  {attributes.length}
+                                </td>
+                              </tr>
+
+                              <tr>
+                                <th className="pr-4 align-top pb-2 font-normal">
+                                  {t("geometryType")}
+                                </th>
+                                <td className="text-gray-600 align-top font-light">
+                                  {hasGeometry
+                                    ? filteredData.features[0]?.geometry
+                                        ?.type || t("unknown")
+                                    : t("noGeometry")}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+
+                          {/* Mobile/Fallback Layout (shown below md) */}
+                          <div className="md:hidden space-y-4">
+                            <div>
+                              <span>{t("layerName")}</span>
+                              <p className="text-gray-900 font-light">
+                                {selectedLayer.title || selectedLayer.id}
+                              </p>
+                            </div>
+
+                            {selectedLayer.abstract && (
+                              <div>
+                                <span>{t("layerDescription")}</span>
+                                <p className="text-gray-900 font-light">
+                                  {selectedLayer.abstract}
+                                </p>
+                              </div>
+                            )}
+
+                            {selectedLayer.keywords?.length > 0 && (
+                              <div>
+                                <span>{t("keywords")}</span>
+                                <p className="text-gray-900 font-light">
+                                  {selectedLayer.keywords.join(", ")}
+                                </p>
+                              </div>
+                            )}
+
+                            {(selectedLayer.contactPerson ||
+                              selectedLayer.contactOrganization ||
+                              selectedLayer.contactEmail) && (
+                              <div>
+                                <span>{t("contact")}</span>
+                                <p className="text-gray-900 font-light">
+                                  {selectedLayer.contactPerson &&
+                                    `${selectedLayer.contactPerson}, `}
+                                  {selectedLayer.contactOrganization &&
+                                    `${selectedLayer.contactOrganization}, `}
+                                  {selectedLayer.contactEmail}
+                                </p>
+                              </div>
+                            )}
+
+                            {selectedLayer.fees && (
+                              <div>
+                                <span>{t("fees")}</span>
+                                <p className="text-gray-900 font-light">
+                                  {selectedLayer.fees}
+                                </p>
+                              </div>
+                            )}
+
+                            {selectedLayer.accessConstraints && (
+                              <div>
+                                <span>{t("accessConstraints")}</span>
+                                <p className="text-gray-900 font-light">
+                                  {selectedLayer.accessConstraints}
+                                </p>
+                              </div>
+                            )}
+
+                            {selectedLayer.metadataUrl && (
+                              <div>
+                                <span>{t("metadataUrl")}</span>
+                                <a
+                                  href={selectedLayer.metadataUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-odis-light hover:underline inline-flex items-center"
+                                >
+                                  {t("viewFullMetadata")}
+                                  <ExternalLink className="h-3 w-3 ml-1" />
+                                </a>
+                              </div>
+                            )}
+
+                            {selectedLayer.bounds && (
+                              <div>
+                                <span>{t("bounds")}</span>
+                                <p className="text-gray-900 font-light">
+                                  minX: {selectedLayer.bounds.minx}, minY:{" "}
+                                  {selectedLayer.bounds.miny}, maxX:{" "}
+                                  {selectedLayer.bounds.maxx}, maxY:{" "}
+                                  {selectedLayer.bounds.maxy}
+                                  {selectedLayer.bounds.crs &&
+                                    ` (${selectedLayer.bounds.crs})`}
+                                </p>
+                              </div>
+                            )}
+
+                            <div>
+                              <span>{t("displayProjection")}</span>
+                              <p className="text-gray-900 font-light">
+                                WGS84 (EPSG:4326)
+                              </p>
+                            </div>
+
+                            <div>
+                              <span>{t("sourceProjection")}</span>
+                              <p className="text-gray-900 font-light">
+                                {sourceProjection}
+                              </p>
+                            </div>
+
+                            {/* Number of Attributes */}
+                            <div>
+                              <span>{t("numberOfAttributes")}</span>
+                              <p className="text-gray-900 font-light">
+                                {attributes.length}
+                              </p>
+                            </div>
+
+                            {/* Geometry Type */}
+                            <div>
+                              <span>{t("geometryType")}</span>
+                              <p className="text-gray-900 font-light">
+                                {hasGeometry
+                                  ? filteredData.features[0]?.geometry?.type ||
+                                    t("unknown")
+                                  : t("noGeometry")}
+                              </p>
+                            </div>
+                          </div>
+                        </>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : null}
 
               {/* 2. Filter Options */}
               <div className="mb-6">
