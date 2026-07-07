@@ -33,7 +33,9 @@ import {
   WandSparkles,
   TableOfContents,
   Sigma,
-  X
+  X,
+  Layers,
+  ArrowLeftRight
 } from "lucide-react";
 import {
   fetchWfsCapabilities,
@@ -2023,15 +2025,22 @@ export default function WfsAnalyzer() {
             <div className="space-y-8">
               {/* Active Service/Layer Title & Change Layer Button */}
               {selectedLayer && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <h2 className="text-2xl font-bold text-slate-900">
-                    {selectedLayer.title || selectedLayer.id}
-                  </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center bg-odis-extra-light justify-between gap-4 border border-slate-100 rounded-lg px-4 py-3 mb-2 shadow-sm">
+                  <div className="flex items-center gap-3 p-2">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">
+                        {t("activeDataset")}
+                      </p>
+                      <h2 className="text-lg font-bold text-slate-800 leading-tight">
+                        {selectedLayer.title || selectedLayer.id}
+                      </h2>
+                    </div>
+                  </div>
                   {availableLayers.length > 1 && (
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="flex items-center gap-1 border-slate-300 text-slate-700 hover:bg-slate-50"
+                      className="text-odis-light hover:bg-odis-extra-light font-medium flex items-center gap-1.5"
                       onClick={() => {
                         setSelectedLayer(null);
                         const newUrl = new URL(window.location.href);
@@ -2043,6 +2052,7 @@ export default function WfsAnalyzer() {
                         );
                       }}
                     >
+                      <ArrowLeftRight className="h-4 w-4" />
                       {t("changeLayer")}
                     </Button>
                   )}
@@ -2239,8 +2249,8 @@ export default function WfsAnalyzer() {
                                 </th>
                                 <td className="text-gray-600 align-top font-light">
                                   {hasGeometry
-                                    ? filteredData.features[0]?.geometry?.type ||
-                                      t("unknown")
+                                    ? filteredData.features[0]?.geometry
+                                        ?.type || t("unknown")
                                     : t("noGeometry")}
                                 </td>
                               </tr>
@@ -2343,35 +2353,35 @@ export default function WfsAnalyzer() {
                               </p>
                             </div>
 
-                             <div>
-                               <span>{t("sourceProjection")}</span>
-                               <p className="text-gray-900 font-light">
-                                 {sourceProjection}
-                               </p>
-                             </div>
+                            <div>
+                              <span>{t("sourceProjection")}</span>
+                              <p className="text-gray-900 font-light">
+                                {sourceProjection}
+                              </p>
+                            </div>
 
-                             {/* Number of Attributes */}
-                             <div>
-                               <span>{t("numberOfAttributes")}</span>
-                               <p className="text-gray-900 font-light">
-                                 {attributes.length}
-                               </p>
-                             </div>
+                            {/* Number of Attributes */}
+                            <div>
+                              <span>{t("numberOfAttributes")}</span>
+                              <p className="text-gray-900 font-light">
+                                {attributes.length}
+                              </p>
+                            </div>
 
-                             {/* Geometry Type */}
-                             <div>
-                               <span>{t("geometryType")}</span>
-                               <p className="text-gray-900 font-light">
-                                 {hasGeometry
-                                   ? filteredData.features[0]?.geometry?.type ||
-                                     t("unknown")
-                                   : t("noGeometry")}
-                               </p>
-                             </div>
-                           </div>
-                         </>
-                       </div>
-                     </CardContent>
+                            {/* Geometry Type */}
+                            <div>
+                              <span>{t("geometryType")}</span>
+                              <p className="text-gray-900 font-light">
+                                {hasGeometry
+                                  ? filteredData.features[0]?.geometry?.type ||
+                                    t("unknown")
+                                  : t("noGeometry")}
+                              </p>
+                            </div>
+                          </div>
+                        </>
+                      </div>
+                    </CardContent>
                   </Card>
                 </div>
               ) : null}

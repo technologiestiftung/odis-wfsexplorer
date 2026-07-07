@@ -20,6 +20,7 @@ export type TranslationKey =
   | "layers"
   | "layersDescription"
   | "currentLayer"
+  | "activeDataset"
   | "layerInfoDescription"
   | "layer"
   | "layerName"
@@ -308,6 +309,7 @@ export const enTranslations: Record<TranslationKey, string> = {
   layersDescription:
     "This WFS service contains multiple layers. Please select one to analyze.",
   currentLayer: "About the Data",
+  activeDataset: "Active Dataset",
   layerInfoDescription: "Metadata from the loaded WFS layer",
   layer: "Layer:",
   layerName: "Name",
@@ -624,6 +626,7 @@ export const deTranslations: Record<TranslationKey, string> = {
   layersDescription:
     "Dieser WFS-Dienst enthält mehrere Layer. Wählen eine zur Analyse aus.",
   currentLayer: "Metadaten explorieren",
+  activeDataset: "Aktiver Datensatz",
   layerInfoDescription: "Metadaten aus der geladene Layer",
   layer: "Layer:",
   layerName: "Name",
