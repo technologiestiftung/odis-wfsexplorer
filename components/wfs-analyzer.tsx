@@ -2011,7 +2011,7 @@ export default function WfsAnalyzer() {
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">
                       {t("activeDataset")}
                     </p>
-                    <h2 className="text-2xl font-bold text-slate-800 leading-tight">
+                    <h2 className="text-2xl font-bold text-slate-800 leading-tight capitalize">
                       {selectedLayer.title || selectedLayer.id}
                     </h2>
                   </div>

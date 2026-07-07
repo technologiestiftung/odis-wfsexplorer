@@ -46,7 +46,9 @@ export function LayerSelector({
               disabled={isLoading}
             >
               <div className="flex flex-col items-start">
-                <span className="font-medium">{layer.title || layer.id}</span>
+                <span className="font-medium capitalize">
+                  {layer.title || layer.id}
+                </span>
                 {layer.abstract && layer.title !== layer.abstract && (
                   <span className="text-sm text-muted-foreground mt-1">
                     {layer.abstract}
