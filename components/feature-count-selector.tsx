@@ -1,13 +1,6 @@
 "use client";
 
 import { useLanguage } from "@/lib/language-context";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface FeatureCountSelectorProps {
@@ -92,98 +85,86 @@ export function FeatureCountSelector(props: FeatureCountSelectorProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("maxFeatures")}</CardTitle>
-        <CardDescription className="flex items-center gap-1 text-amber-600">
-          <AlertTriangle className="h-3.5 w-3.5" />
-          {t("loadingPerformanceWarning")}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label htmlFor="max-features">
-              {t("maxFeatures")}
-              {totalFeatureCount !== null && totalFeatureCount !== -1 && (
-                <>
-                  {" "}
-                  ({t("ofTotal")} {totalFeatureCount?.toLocaleString()})
-                </>
+    <div className="flex flex-col gap-2 bg-slate-50 border rounded-lg p-3 text-sm text-slate-700">
+      <div className="flex flex-wrap items-center gap-3">
+        <Label htmlFor="max-features" className="font-semibold text-slate-700">
+          {t("maxFeatures")}:
+        </Label>
+
+        <div className="flex items-center gap-2">
+          <Select
+            value={
+              isCustom
+                ? "custom"
+                : maxFeatures === totalFeatureCount &&
+                  totalFeatureCount !== null
+                ? "all"
+                : maxFeatures.toString()
+            }
+            onValueChange={handleSelectChange}
+          >
+            <SelectTrigger id="max-features" className="w-[150px] h-9">
+              <SelectValue placeholder="Select limit" />
+            </SelectTrigger>
+            <SelectContent>
+              {[500, 1000, 5000, 10000].map((count) =>
+                totalFeatureCount === null || count <= totalFeatureCount ? (
+                  <SelectItem key={count} value={count.toString()}>
+                    {t(`features${count}`)}
+                  </SelectItem>
+                ) : null
               )}
-            </Label>
-          </div>
-
-          <div className="flex gap-2">
-            <Select
-              value={
-                isCustom
-                  ? "custom"
-                  : maxFeatures === totalFeatureCount &&
-                    totalFeatureCount !== null
-                  ? "all"
-                  : maxFeatures.toString()
-              }
-              onValueChange={handleSelectChange}
-            >
-              <SelectTrigger id="max-features" className="w-[180px]">
-                <SelectValue placeholder="Select limit" />
-              </SelectTrigger>
-              <SelectContent>
-                {[500, 1000, 5000, 10000].map((count) =>
-                  totalFeatureCount === null || count <= totalFeatureCount ? (
-                    <SelectItem key={count} value={count.toString()}>
-                      {t(`features${count}`)}
-                    </SelectItem>
-                  ) : null
+              {totalFeatureCount !== null &&
+                totalFeatureCount > 0 &&
+                maxFeatures < totalFeatureCount && (
+                  <SelectItem value="all">
+                    {t("allFeatures")} ({totalFeatureCount.toLocaleString()})
+                  </SelectItem>
                 )}
-                {totalFeatureCount !== null &&
-                  totalFeatureCount > 0 &&
-                  maxFeatures < totalFeatureCount && (
-                    <SelectItem value="all">
-                      {t("allFeatures")} ({totalFeatureCount.toLocaleString()})
-                    </SelectItem>
-                  )}
-                <SelectItem value="custom">{t("customValue")}</SelectItem>
-              </SelectContent>
-            </Select>
+              <SelectItem value="custom">{t("customValue")}</SelectItem>
+            </SelectContent>
+          </Select>
 
-            {isCustom && (
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={customValue}
-                  onChange={(e) => {
-                    const value = Number.parseInt(e.target.value, 10);
-                    // Don't allow values greater than total feature count if known
-                    if (
-                      totalFeatureCount !== null &&
-                      !isNaN(value) &&
-                      value > totalFeatureCount
-                    ) {
-                      setCustomValue(totalFeatureCount.toString());
-                    } else {
-                      setCustomValue(e.target.value);
-                    }
-                  }}
-                  className="w-24 px-3 py-2 border rounded-md"
-                  min="1"
-                  max={
-                    totalFeatureCount !== null ? totalFeatureCount : undefined
+          {totalFeatureCount !== null && totalFeatureCount !== -1 && (
+            <span className="text-slate-500 font-normal">
+              ({t("ofTotal")} {totalFeatureCount.toLocaleString()})
+            </span>
+          )}
+
+          {isCustom && (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={customValue}
+                onChange={(e) => {
+                  const value = Number.parseInt(e.target.value, 10);
+                  // Don't allow values greater than total feature count if known
+                  if (
+                    totalFeatureCount !== null &&
+                    !isNaN(value) &&
+                    value > totalFeatureCount
+                  ) {
+                    setCustomValue(totalFeatureCount.toString());
+                  } else {
+                    setCustomValue(e.target.value);
                   }
-                />
-                <Button size="sm" onClick={handleCustomApply}>
-                  {t("apply")}
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <p className="text-xs text-muted-foreground mt-1">
-            {t("downloadAllNote")}
-          </p>
+                }}
+                className="w-20 h-9 px-2 py-1 border rounded-md text-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-400"
+                min="1"
+                max={totalFeatureCount !== null ? totalFeatureCount : undefined}
+              />
+              <Button size="sm" onClick={handleCustomApply} className="h-9 px-3">
+                {t("apply")}
+              </Button>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="flex items-center gap-1.5 text-amber-600 text-xs font-medium mt-1">
+        <AlertTriangle className="h-4 w-4 shrink-0" />
+        <span>{t("loadingPerformanceWarning")}</span>
+      </div>
+    </div>
   );
 }
