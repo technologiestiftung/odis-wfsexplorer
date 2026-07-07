@@ -2020,7 +2020,7 @@ export default function WfsAnalyzer() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-odis-light border-slate-200 hover:bg-slate-50 font-medium flex items-center gap-1.5 h-9"
+                        className="flex items-center gap-1.5 border-slate-200 h-9 transition-colors bg-background hover:text-accent-foreground hover:bg-active-light"
                         onClick={() => {
                           setSelectedLayer(null);
                           const newUrl = new URL(window.location.href);
@@ -2039,7 +2039,7 @@ export default function WfsAnalyzer() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex items-center gap-1.5 border-slate-200 text-odis-light hover:bg-slate-50 h-9"
+                      className="flex items-center gap-1.5 border-slate-200 h-9 transition-colors bg-background hover:text-accent-foreground hover:bg-active-light"
                       onClick={copyUrlToClipboard}
                       title={t("shareWfs")}
                     >
