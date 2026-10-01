@@ -776,12 +776,9 @@ export default function WfsAnalyzer() {
       lastAnalyzedUrlRef.current !== null &&
       lastAnalyzedUrlRef.current !== nextUrl;
 
-    // Use passed values (for initial load) or current state (for subsequent calls)
-    const hasBboxFromUrl = urlBbox !== undefined ? !!urlBbox : !!bboxFilter;
-    const hasFiltersFromUrl =
-      urlFilters !== undefined
-        ? urlFilters.length > 0
-        : initialFilters.length > 0;
+    // Only defer to the layer load effect when bbox/filters come from the initial URL parse
+    const hasBboxFromUrl = !!urlBbox;
+    const hasFiltersFromUrl = !!urlFilters?.length;
 
     // Reset all states
     setError(null);
@@ -846,7 +843,13 @@ export default function WfsAnalyzer() {
         );
         if (!hasBboxFromUrl && !hasFiltersFromUrl) {
           console.log("analyzeWfsUrl: calling fetchLayerData (no URL params)");
-          await fetchLayerData(layers[0], cleanUrl);
+          // bboxFilter in this closure is stale after a WFS change (it was just cleared)
+          await fetchLayerDataWithMaxFeatures(
+            layers[0],
+            maxFeatures,
+            cleanUrl,
+            isWfsChange ? null : bboxFilter
+          );
         } else {
           console.log(
             "analyzeWfsUrl: NOT calling fetchLayerData (will let effect handle with bbox/filters)"
