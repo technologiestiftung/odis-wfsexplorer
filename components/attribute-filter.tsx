@@ -54,6 +54,18 @@ const DATE_OPERATORS = [
   { value: "isNotNull", label: "Is Not Null" }
 ];
 
+const VALUELESS_OPERATORS = ["isEmpty", "isNotEmpty", "isNull", "isNotNull"];
+
+// A condition only takes effect once its value (and value2 for "between") is set
+function isConditionComplete(condition: FilterCondition) {
+  if (VALUELESS_OPERATORS.includes(condition.operator)) return true;
+  if (condition.value.trim() === "") return false;
+  if (condition.operator === "between") {
+    return (condition.value2 ?? "").trim() !== "";
+  }
+  return true;
+}
+
 // Define filter condition interface
 export interface FilterCondition {
   id: string;
@@ -109,7 +121,10 @@ export function AttributeFilter({
   }, [data, attributes]);
 
   const applyFilters = useCallback(() => {
-    if (!data || !data.features || filterConditions.length === 0) {
+    // Ignore conditions the user hasn't filled in yet
+    const completeConditions = filterConditions.filter(isConditionComplete);
+
+    if (!data || !data.features || completeConditions.length === 0) {
       onFilterChange(data, []);
       setActiveFilters([]);
       setFilteredCount(null);
@@ -118,7 +133,7 @@ export function AttributeFilter({
     }
 
     const filteredFeatures = data.features.filter((feature: any) => {
-      return filterConditions.every((condition) => {
+      return completeConditions.every((condition) => {
         const { attribute, operator, value, value2 } = condition;
         const featureValue = feature.properties[attribute];
 
@@ -236,15 +251,15 @@ export function AttributeFilter({
 
     // Update filtered count and active filters
     setFilteredCount(filteredFeatures.length);
-    setActiveFilters([...filterConditions]);
+    setActiveFilters([...completeConditions]);
 
     // Notify parent about active filters
     if (onActiveFiltersChange) {
-      onActiveFiltersChange([...filterConditions]);
+      onActiveFiltersChange([...completeConditions]);
     }
 
     // Pass filtered data to parent component
-    onFilterChange(filteredData, [...filterConditions]);
+    onFilterChange(filteredData, [...completeConditions]);
   }, [
     data,
     filterConditions,
@@ -626,6 +641,7 @@ export function AttributeFilter({
                             : "text"
                       }
                       list={`suggestions-${condition.id}`}
+                      placeholder={t("selectValue")}
                     />
                     <datalist id={`suggestions-${condition.id}`}>
                       {attributeValueSuggestions[condition.attribute]?.map(
@@ -664,6 +680,7 @@ export function AttributeFilter({
                                 : "text"
                           }
                           list={`suggestions2-${condition.id}`}
+                          placeholder={t("selectValue")}
                         />
                         <datalist id={`suggestions2-${condition.id}`}>
                           {attributeValueSuggestions[condition.attribute]?.map(
@@ -691,7 +708,7 @@ export function AttributeFilter({
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select value" />
+                        <SelectValue placeholder={t("selectValue")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="true">True</SelectItem>
